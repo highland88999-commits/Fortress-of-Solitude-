@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympus | Fortress of Solitude Storage</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: white; }
+        canvas { display: block; }
+
+        /* HUD Styling */
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 40, 80, 0.4);
+            padding: 15px 30px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            z-index: 10;
+        }
+
+        .btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 10px 15px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 12px;
+            transition: 0.3s;
+        }
+
+        .btn:hover { background: rgba(0, 255, 255, 0.3); box-shadow: 0 0 15px #0ff; }
+
+        #storage-bar {
+            width: 200px;
+            height: 10px;
+            background: #111;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        #storage-fill {
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, #00f, #0ff);
+            box-shadow: 0 0 10px #0ff;
+        }
+
+        /* Popup Logic */
+        #crystal-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 20, 40, 0.9);
+            padding: 20px;
+            border: 2px solid #0ff;
+            display: none;
+            text-align: center;
+            z-index: 20;
+        }
+
+        #crystal-name-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #0ff;
+            color: white;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        #color-picker { margin: 10px 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <button class="btn" onclick="addCrystal()">Add Crystal</button>
+        <div style="text-align: center;">
+            <div style="font-size: 10px; margin-bottom: 5px;">FREE TIER: 1.2GB / 2GB</div>
+            <div id="storage-bar"><div id="storage-fill"></div></div>
+        </div>
+        <button class="btn" style="border-color: #f0f; color: #f0f;">Upgrade</button>
+        <button class="btn" id="vault-btn">My Vault (Master)</button>
+    </div>
+
+    <div id="crystal-popup">
+        <input type="text" id="crystal-name-input" value="Crystal #4">
+        <br>
+        <button class="btn">Upload File</button>
+        <p>Adjust Bloom Color:</p>
+        <input type="color" id="color-picker" value="#00ffff">
+        <br><br>
+        <button class="btn" onclick="closePopup()">Save to Olympus</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { gsap } from 'https://cdn.skypack.dev/gsap';
+
+        let scene, camera, renderer, composer, controls;
+        let crystals = [];
+        const crystalCount = 10;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        init();
+        animate();
+
+        function init() {
+            // Scene & Camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Textures (Placeholders for your uploads)
+            const textureLoader = new THREE.TextureLoader();
+            const crystalTex = textureLoader.load('crystal_texture.jpg'); // Your crystal texture
+            const domeTex = textureLoader.load('dome_wrapper.jpg'); // Your white dome wrapper
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            // Post-Processing (The Bloom Effect)
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.2;
+            bloomPass.strength = 2.0; // High bloom for that automotive string light glow
+            
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // Create Dome
+            const domeGeo = new THREE.SphereGeometry(20, 32, 32);
+            const domeMat = new THREE.MeshPhongMaterial({ 
+                map: domeTex, 
+                side: THREE.BackSide, 
+                transparent: true, 
+                opacity: 0.5 
+            });
+            const dome = new THREE.Mesh(domeGeo, domeMat);
+            scene.add(dome);
+
+            // Create Initial Crystals
+            for (let i = 0; i < crystalCount; i++) {
+                createCrystal(i);
+            }
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            window.addEventListener('click', onDocumentMouseDown, false);
+        }
+
+        function createCrystal(index) {
+            const angle = (index / crystalCount) * Math.PI * 2;
+            const radius = 5;
+
+            const geometry = new THREE.CylinderGeometry(0.5, 0.5, 3, 6);
+            const material = new THREE.MeshPhongMaterial({ 
+                color: 0x00ffff, 
+                emissive: 0x00ffff, 
+                emissiveIntensity: 0.5,
+                shininess: 100
+            });
+
+            const crystal = new THREE.Mesh(geometry, material);
+            crystal.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            crystal.userData = { id: index, name: `Crystal #${index + 1}` };
+            
+            scene.add(crystal);
+            crystals.push(crystal);
+        }
+
+        function onDocumentMouseDown(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(crystals);
+
+            if (intersects.length > 0) {
+                const selected = intersects[0].object;
+                
+                // Animate rising 1 inch (approx 0.3 units)
+                gsap.to(selected.position, { y: 1, duration: 0.5, ease: "power2.out" });
+                
+                // Show Popup
+                document.getElementById('crystal-popup').style.display = 'block';
+                document.getElementById('crystal-name-input').value = selected.userData.name;
+                
+                // Handle Color Change (Bloom Logic)
+                document.getElementById('color-picker').oninput = (e) => {
+                    const color = e.target.value;
+                    selected.material.color.set(color);
+                    selected.material.emissive.set(color);
+                };
+            }
+        }
+
+        window.closePopup = function() {
+            document.getElementById('crystal-popup').style.display = 'none';
+            // Return crystals to ground
+            crystals.forEach(c => gsap.to(c.position, { y: 0, duration: 0.5 }));
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // Slowly rotate the whole scene/carousel
+            scene.rotation.y += 0.002;
+            composer.render();
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

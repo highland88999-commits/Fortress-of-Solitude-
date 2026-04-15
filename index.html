@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Sharp Holographic Fortress</title>
+    <title>Olympus | Holographic Personal Fortress</title>
     <style>
         :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.95); }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
@@ -15,22 +15,22 @@
         }
 
         #bottom-bar {
-            pointer-events: auto; width: 100%; max-width: 650px; margin: 0 auto 30px auto;
-            background: linear-gradient(180deg, rgba(0,255,255,0.05) 0%, var(--bg) 100%);
-            border: 1px solid rgba(0,255,255,0.3); 
+            pointer-events: auto; width: 100%; max-width: 680px; margin: 0 auto 30px auto;
+            background: linear-gradient(180deg, rgba(0,255,255,0.06) 0%, var(--bg) 100%);
+            border: 1px solid rgba(0,255,255,0.35); 
             border-radius: 30px;
             padding: 12px 20px; 
             display: flex; 
             align-items: center; 
             justify-content: space-between;
-            backdrop-filter: blur(15px);
+            backdrop-filter: blur(20px);
         }
 
         .btn {
-            background: rgba(0,0,0,0.6); 
+            background: rgba(0,0,0,0.7); 
             border: 1px solid var(--cyan); 
             color: var(--cyan);
-            padding: 10px 22px; 
+            padding: 11px 24px; 
             border-radius: 30px; 
             cursor: pointer; 
             font-size: 11px;
@@ -39,8 +39,8 @@
             transition: 0.3s;
         }
         .btn:hover { 
-            box-shadow: 0 0 15px var(--cyan); 
-            background: rgba(0,255,255,0.25); 
+            box-shadow: 0 0 18px var(--cyan); 
+            background: rgba(0,255,255,0.3); 
         }
 
         #popup {
@@ -48,7 +48,7 @@
             background: var(--bg); border: 1px solid var(--cyan);
             padding: 30px; border-radius: 20px; text-align: center;
             display: none; pointer-events: auto; z-index: 50; color: white;
-            box-shadow: 0 0 50px rgba(0,0,0,1);
+            box-shadow: 0 0 60px rgba(0,255,255,0.3);
         }
 
         input[type="text"] {
@@ -58,7 +58,7 @@
 
         #tooltip {
             position: fixed; pointer-events: none; display: none;
-            color: var(--cyan); text-shadow: 0 0 10px var(--cyan);
+            color: var(--cyan); text-shadow: 0 0 12px var(--cyan);
             font-size: 14px; z-index: 100; font-weight: bold;
         }
     </style>
@@ -80,13 +80,13 @@
 
         <div id="bottom-bar">
             <button class="btn" onclick="spawnCrystal()">ADD CRYSTAL</button>
-            <div style="text-align:center; flex: 1;">
-                <div style="font-size: 9px; color: var(--cyan); margin-bottom:4px;">VAULT CAPACITY: 1.2 / 2.0 GB</div>
-                <div style="width:160px; height:4px; background:#111; border-radius:2px; margin:0 auto;">
-                    <div style="width:60%; height:100%; background:var(--cyan); box-shadow:0 0 8px var(--cyan);"></div>
+            <div style="text-align:center; flex:1; padding:0 15px;">
+                <div style="font-size: 9px; color: var(--cyan); margin-bottom:5px;">VAULT CAPACITY: 1.2 / 2.0 GB</div>
+                <div style="width:180px; height:4px; background:#111; border-radius:3px; margin:0 auto;">
+                    <div style="width:60%; height:100%; background:var(--cyan); box-shadow:0 0 10px var(--cyan);"></div>
                 </div>
             </div>
-            <button class="btn" style="border-color:#f0f; color:#f0f;">UPGRADE</button>
+            <button class="btn" style="border-color:#ff00ff; color:#ff00ff;">UPGRADE</button>
         </div>
     </div>
 
@@ -109,7 +109,7 @@
 
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [];
-        let crystalCount = 10;
+        let crystalCount = 12;
         let selectedNode = null;
         let floorMesh;
 
@@ -118,38 +118,38 @@
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 15, 22);
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(0, 18, 25);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMappingExposure = 1.1; 
+            renderer.toneMappingExposure = 1.0;
             document.body.appendChild(renderer.domElement);
 
             const loader = new THREE.TextureLoader();
 
-            // Layered Dome (both graphics transparently layered)
-            const domeGeo = new THREE.SphereGeometry(45, 32, 32);
+            // Ethereal layered dome
+            const domeGeo = new THREE.SphereGeometry(48, 64, 64);
             
             const outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.20 
+                side: THREE.BackSide, transparent: true, opacity: 0.16 
             }));
             scene.add(outerDome);
 
-            const innerDome = new THREE.Mesh(new THREE.SphereGeometry(44.5, 32, 32), new THREE.MeshBasicMaterial({ 
+            const innerDome = new THREE.Mesh(new THREE.SphereGeometry(47.2, 64, 64), new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228269143.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending 
+                side: THREE.BackSide, transparent: true, opacity: 0.10, blending: THREE.AdditiveBlending 
             }));
             scene.add(innerDome);
 
-            // Holographic Floor - TRUE COLOR projection
-            const floorGeo = new THREE.CircleGeometry(12, 64);
+            // Central holographic floor - true color, minimal bloom
+            const floorGeo = new THREE.CircleGeometry(11.5, 96);
             const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0xffffff,           // Pure white = true color for uploads
+                color: 0xffffff,
                 transparent: true, 
-                opacity: 0.95, 
+                opacity: 0.94, 
                 blending: THREE.AdditiveBlending, 
                 side: THREE.DoubleSide 
             });
@@ -158,27 +158,29 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // Bloom - tuned to keep floor clean while crystals glow
+            // Bloom tuned: higher threshold = much less bloom on floor/center
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight), 
-                0.85,   // strength
-                0.8,    // radius
-                0.55    // threshold (higher = less bloom on floor)
+                0.75,   // reduced strength
+                0.85,   // radius
+                0.75    // higher threshold → only very bright crystals bloom strongly
             );
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // Create initial crystals
+            // Create crystals
             for (let i = 0; i < crystalCount; i++) createNode(i);
 
             // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
+            controls.dampingFactor = 0.08;
             controls.enablePan = false;
-            controls.maxPolarAngle = Math.PI / 2.2;
+            controls.maxPolarAngle = Math.PI * 0.48;
+            controls.minDistance = 18;
+            controls.maxDistance = 45;
 
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
@@ -187,7 +189,7 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // Floor upload handler - true color projection
+            // Floor upload handler
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -200,13 +202,12 @@
                     video.loop = true;
                     video.muted = true;
                     video.playsInline = true;
-                    video.play().catch(() => {});
+                    video.play();
                     floorMesh.material.map = new THREE.VideoTexture(video);
                 } else {
                     floorMesh.material.map = loader.load(url);
                 }
                 
-                // Force true color
                 floorMesh.material.color.setHex(0xffffff);
                 floorMesh.material.needsUpdate = true;
             });
@@ -214,21 +215,23 @@
 
         function createNode(i) {
             const angle = (i / crystalCount) * Math.PI * 2;
-            const radius = 9;
-            const geo = new THREE.CylinderGeometry(0.5, 0.4, 4, 6);
+            const radius = 10.2;
+            const height = 4.2;
+            
+            const geo = new THREE.CylinderGeometry(0.45, 0.38, height, 8);
             const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
             
             const mat = new THREE.MeshStandardMaterial({ 
                 map: tex, 
                 emissive: 0x00ffff, 
-                emissiveIntensity: 0.65, 
-                metalness: 0.85, 
-                roughness: 0.15 
+                emissiveIntensity: 0.65,   // lowered so floor doesn't get over-bloomed
+                metalness: 0.9, 
+                roughness: 0.1 
             });
 
             const node = new THREE.Mesh(geo, mat);
-            node.position.set(Math.cos(angle)*radius, 1, Math.sin(angle)*radius);
-            node.userData = { name: `NODE_ID_${i+1}`, color: '#00ffff' };
+            node.position.set(Math.cos(angle) * radius, height / 2, Math.sin(angle) * radius);
+            node.userData = { name: `NODE_${(i+1).toString().padStart(2,'0')}`, color: '#00ffff' };
             scene.add(node);
             crystals.push(node);
         }
@@ -242,8 +245,8 @@
             
             if (hits.length > 0) {
                 tooltip.style.display = 'block';
-                tooltip.style.left = e.clientX + 15 + 'px';
-                tooltip.style.top = e.clientY + 15 + 'px';
+                tooltip.style.left = `${e.clientX + 18}px`;
+                tooltip.style.top = `${e.clientY + 12}px`;
                 tooltip.innerText = hits[0].object.userData.name;
                 document.body.style.cursor = 'pointer';
             } else {
@@ -262,7 +265,7 @@
                     document.getElementById('hologram-upload').click();
                 } else {
                     selectedNode = obj;
-                    gsap.to(selectedNode.position, { y: 2.5, duration: 0.5 });
+                    gsap.to(selectedNode.position, { y: 3.2, duration: 0.4, ease: "power2.out" });
                     document.getElementById('popup').style.display = 'block';
                     document.getElementById('node-name').value = selectedNode.userData.name;
                     document.getElementById('color-picker').value = selectedNode.userData.color;
@@ -281,9 +284,9 @@
         }
 
         window.saveAndClose = function() {
-            if(selectedNode) {
+            if (selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
-                gsap.to(selectedNode.position, { y: 1, duration: 0.5 });
+                gsap.to(selectedNode.position, { y: 2.1, duration: 0.4, ease: "power2.in" });
             }
             document.getElementById('popup').style.display = 'none';
             selectedNode = null;
@@ -291,9 +294,15 @@
 
         window.spawnCrystal = function() {
             crystalCount++;
+            const newAngle = ((crystalCount - 1) / crystalCount) * Math.PI * 2;
             crystals.forEach((c, i) => {
                 const angle = (i / crystalCount) * Math.PI * 2;
-                gsap.to(c.position, { x: Math.cos(angle)*9, z: Math.sin(angle)*9, duration: 1 });
+                gsap.to(c.position, { 
+                    x: Math.cos(angle) * 10.2, 
+                    z: Math.sin(angle) * 10.2, 
+                    duration: 1.1, 
+                    ease: "power2.inOut" 
+                });
             });
             createNode(crystalCount - 1);
         }

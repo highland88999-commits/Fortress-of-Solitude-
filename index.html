@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Holographic Fortress</title>
+    <title>Olympus | Holographic Personal Fortress</title>
     <style>
-        :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.95); }
+        :root { --cyan: #00ffff; --bg: rgba(0, 10, 20, 0.9); }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         
-        /* STABILIZED HUD */
+        /* HUD UI */
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 10;
@@ -30,6 +30,7 @@
         }
         .btn:hover { box-shadow: 0 0 15px var(--cyan); background: rgba(0,255,255,0.2); }
 
+        /* INTERACTION POPUP */
         #popup {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: var(--bg); border: 1px solid var(--cyan);
@@ -48,37 +49,33 @@
             color: var(--cyan); text-shadow: 0 0 10px var(--cyan);
             font-size: 14px; z-index: 100; font-weight: bold;
         }
-
-        /* Video element for floor (hidden) */
-        #hidden-video { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="tooltip">NODE_ID</div>
-    
-    <video id="hidden-video" autoplay loop muted playsinline src="assets/1000000253.mp4"></video>
+    <div id="tooltip">DATA_NODE</div>
+    <input type="file" id="hologram-upload" style="display:none" accept="image/*,video/*">
 
     <div id="ui-layer">
         <div id="popup">
             <input type="text" id="node-name" value="CRYSTAL_CORE">
-            <button class="btn" style="width:100%; margin-bottom:15px;">Upload Data</button>
-            <span style="font-size:10px; letter-spacing:2px;">ENERGY COLOR</span>
-            <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:40px; border:none; background:none; cursor:pointer;">
+            <button class="btn" style="width:100%; margin-bottom:15px;">Upload Data File</button>
+            <span style="font-size:10px; letter-spacing:2px;">SELECT CORE ENERGY (FULL SPECTRUM)</span>
+            <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:45px; border:none; background:none; cursor:pointer;">
             <br><br>
-            <button class="btn" onclick="saveCrystal()" style="width:100%;">Commit to Server</button>
+            <button class="btn" onclick="saveAndClose()" style="width:100%;">Sync to Olympus</button>
         </div>
 
         <div id="bottom-bar">
             <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
             <div style="text-align:center">
-                <div style="font-size: 9px; color: var(--cyan); margin-bottom:5px;">VAULT LOAD: 1.2 / 2.0 GB</div>
+                <div style="font-size: 9px; color: var(--cyan); margin-bottom:5px;">CAPACITY: 1.2 / 2.0 GB</div>
                 <div style="width:140px; height:4px; background:#111; border-radius:2px;">
                     <div style="width:60%; height:100%; background:var(--cyan); box-shadow:0 0 8px var(--cyan);"></div>
                 </div>
             </div>
-            <button class="btn" style="border-color:#f0f; color:#f0f;">Expand</button>
-            <button class="btn">Vault Index</button>
+            <button class="btn" style="border-color:#f0f; color:#f0f;">Upgrade</button>
+            <button class="btn">Vault Access</button>
         </div>
     </div>
 
@@ -103,7 +100,7 @@
         let crystals = [];
         let crystalCount = 10;
         let selectedNode = null;
-        let floorMesh, videoTexture;
+        let floorMesh;
 
         init();
         animate();
@@ -116,63 +113,54 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMappingExposure = 1.0; // Reduced intensity
+            renderer.toneMappingExposure = 1.0; 
             document.body.appendChild(renderer.domElement);
 
             const loader = new THREE.TextureLoader();
 
-            // 1. DOME (Reduced Opacity)
+            // 1. LAYERED DOME (TRANSPARENT WRAP OVER GRAPHIC)
             const domeGeo = new THREE.SphereGeometry(45, 32, 32);
-            const domeMat = new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, 
-                transparent: true, 
-                opacity: 0.2 // Fainter dome
-            });
-            scene.add(new THREE.Mesh(domeGeo, domeMat));
-
-            // 2. HOLOGRAPHIC FLOOR (Video Texture)
-            const video = document.getElementById('hidden-video');
-            videoTexture = new THREE.VideoTexture(video);
             
+            // Outer Layer (Graphic)
+            const outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
+                map: loader.load('assets/1776228660207.png'), 
+                side: THREE.BackSide, transparent: true, opacity: 0.2 
+            }));
+            scene.add(outerDome);
+
+            // Inner Layer (Transparent Crystal Wrap)
+            const innerDome = new THREE.Mesh(new THREE.SphereGeometry(44.5, 32, 32), new THREE.MeshBasicMaterial({ 
+                map: loader.load('assets/1776228269143.png'), 
+                side: THREE.BackSide, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending 
+            }));
+            scene.add(innerDome);
+
+            // 2. HOLOGRAPHIC FLOOR PROJECTOR
             const floorGeo = new THREE.CircleGeometry(12, 64);
             const floorMat = new THREE.MeshBasicMaterial({ 
-                map: videoTexture,
-                transparent: true,
-                opacity: 0.7,
-                blending: THREE.AdditiveBlending, // Makes it look like light projection
-                side: THREE.DoubleSide
+                color: 0xffffff, transparent: true, opacity: 0.7, 
+                blending: THREE.AdditiveBlending, side: THREE.DoubleSide 
             });
-            
             floorMesh = new THREE.Mesh(floorGeo, floorMat);
             floorMesh.rotation.x = -Math.PI / 2;
-            floorMesh.position.y = 0;
+            floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // 3. BALANCED BLOOM (Cinematic, not blinding)
+            // 3. BLOOM
             const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight), 
-                0.8, // Strength reduced from 2.2 to 0.8
-                1.0, // Radius
-                0.3  // Threshold
-            );
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 1.0, 0.3);
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // 4. PARTICLES
-            createParticles();
-
-            // 5. CRYSTALS (Lower Emissive)
+            // 4. CRYSTALS
             for (let i = 0; i < crystalCount; i++) createNode(i);
 
-            // CONTROLS
+            // 5. CONTROLS
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
             controls.enablePan = false;
-            controls.maxPolarAngle = Math.PI / 2.2;
 
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
@@ -180,6 +168,21 @@
             window.addEventListener('mousemove', onHover);
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
+
+            // FILE HANDLER FOR FLOOR HOLOGRAM
+            document.getElementById('hologram-upload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const url = URL.createObjectURL(file);
+                
+                if (file.type.startsWith('video')) {
+                    const video = document.createElement('video');
+                    video.src = url; video.autoplay = true; video.loop = true; video.muted = true; video.play();
+                    floorMesh.material.map = new THREE.VideoTexture(video);
+                } else {
+                    floorMesh.material.map = loader.load(url);
+                }
+                floorMesh.material.needsUpdate = true;
+            });
         }
 
         function createNode(i) {
@@ -189,27 +192,14 @@
             const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
             
             const mat = new THREE.MeshStandardMaterial({ 
-                map: tex, 
-                emissive: 0x00ffff, 
-                emissiveIntensity: 0.4, // Reduced from 0.8 to 0.4
-                metalness: 0.8, 
-                roughness: 0.2 
+                map: tex, emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.8, roughness: 0.2 
             });
 
             const node = new THREE.Mesh(geo, mat);
             node.position.set(Math.cos(angle)*radius, 1, Math.sin(angle)*radius);
-            node.userData = { name: `NODE_ID_${i+1}`, color: '#00ffff' };
+            node.userData = { name: `UNNAMED_CORE_${i+1}`, color: '#00ffff' };
             scene.add(node);
             crystals.push(node);
-        }
-
-        function createParticles() {
-            const pGeo = new THREE.BufferGeometry();
-            const pos = new Float32Array(800 * 3);
-            for(let i=0; i<2400; i++) pos[i] = (Math.random()-0.5)*50;
-            pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-            const pMat = new THREE.PointsMaterial({ size: 0.04, color: 0xffffff, transparent: true, opacity: 0.3 });
-            scene.add(new THREE.Points(pGeo, pMat));
         }
 
         function onHover(e) {
@@ -233,27 +223,32 @@
 
         function onAction() {
             raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(crystals);
+            const hits = raycaster.intersectObjects([...crystals, floorMesh]);
 
             if (hits.length > 0) {
-                selectedNode = hits[0].object;
-                gsap.to(selectedNode.position, { y: 2.5, duration: 0.5, ease: "back.out" });
-                document.getElementById('popup').style.display = 'block';
-                document.getElementById('node-name').value = selectedNode.userData.name;
-                document.getElementById('color-picker').value = selectedNode.userData.color;
+                const obj = hits[0].object;
+                if (obj.userData.isFloor) {
+                    document.getElementById('hologram-upload').click();
+                } else {
+                    selectedNode = obj;
+                    gsap.to(selectedNode.position, { y: 2.5, duration: 0.5 });
+                    document.getElementById('popup').style.display = 'block';
+                    document.getElementById('node-name').value = selectedNode.userData.name;
+                    document.getElementById('color-picker').value = selectedNode.userData.color;
 
-                document.getElementById('color-picker').oninput = (e) => {
-                    const col = e.target.value;
-                    selectedNode.material.emissive.set(col);
-                    selectedNode.material.color.set(col);
-                    selectedNode.userData.color = col;
-                };
+                    document.getElementById('color-picker').oninput = (e) => {
+                        const col = e.target.value;
+                        selectedNode.material.emissive.set(col);
+                        selectedNode.material.color.set(col);
+                        selectedNode.userData.color = col;
+                    };
+                }
             } else {
-                saveCrystal(); 
+                saveAndClose();
             }
         }
 
-        window.saveCrystal = function() {
+        window.saveAndClose = function() {
             if(selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
                 gsap.to(selectedNode.position, { y: 1, duration: 0.5 });

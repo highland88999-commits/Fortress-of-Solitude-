@@ -3,52 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Olympus | Fortress of Solitude</title>
+    <title>Olympus | Fortress Personal Cloud</title>
     <style>
+        :root {
+            --neon-cyan: #00ffff;
+            --deep-ice: rgba(0, 20, 40, 0.8);
+        }
+
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+
+        /* Hover Title Tooltip */
+        #tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(0, 255, 255, 0.1);
+            color: var(--neon-cyan);
+            padding: 5px 12px;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* HUD - Sleek & Ready */
         #hud {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; align-items: center; gap: 20px;
-            background: rgba(0, 40, 80, 0.5); padding: 15px 30px;
-            border-radius: 12px; backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 255, 0.3); z-index: 10;
+            display: flex; align-items: center; gap: 25px;
+            background: linear-gradient(180deg, rgba(0, 255, 255, 0.05) 0%, var(--deep-ice) 100%);
+            padding: 12px 30px; border-radius: 50px;
+            border: 1px solid rgba(0, 255, 255, 0.2); z-index: 10;
+            transition: opacity 0.5s;
         }
+
         .btn {
-            background: rgba(0, 255, 255, 0.1); border: 1px solid #0ff;
-            color: #0ff; padding: 10px 18px; cursor: pointer;
-            text-transform: uppercase; font-weight: bold; transition: 0.3s;
+            background: none; border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan); padding: 8px 20px; cursor: pointer;
+            text-transform: uppercase; font-size: 11px; letter-spacing: 1px;
+            border-radius: 20px; transition: 0.3s;
         }
-        .btn:hover { background: rgba(0, 255, 255, 0.4); box-shadow: 0 0 20px #0ff; }
-        #storage-bar { width: 180px; height: 8px; background: #111; border-radius: 4px; border: 1px solid #333; }
-        #storage-fill { width: 60%; height: 100%; background: #0ff; box-shadow: 0 0 10px #0ff; }
-        #crystal-popup {
+        .btn:hover { background: rgba(0, 255, 255, 0.2); box-shadow: 0 0 15px var(--neon-cyan); }
+
+        #storage-container { text-align: center; width: 150px; }
+        #storage-bar { width: 100%; height: 4px; background: #111; border-radius: 2px; margin-top: 5px; }
+        #storage-fill { width: 60%; height: 100%; background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan); }
+
+        /* Crystal Interaction Popup */
+        #popup {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0, 10, 20, 0.95); padding: 25px; border: 2px solid #0ff;
-            display: none; text-align: center; z-index: 20; color: #fff;
+            background: var(--deep-ice); padding: 30px; border: 1px solid var(--neon-cyan);
+            display: none; text-align: center; z-index: 20; border-radius: 15px;
+            backdrop-filter: blur(15px); color: white;
         }
-        input[type="text"] { background: none; border: none; border-bottom: 1px solid #0ff; color: #fff; font-size: 1.2em; text-align: center; margin-bottom: 20px; outline: none; }
+        #crystal-name-input {
+            background: none; border: none; border-bottom: 1px solid var(--neon-cyan);
+            color: white; font-size: 1.5em; text-align: center; margin-bottom: 20px; outline: none;
+        }
     </style>
 </head>
 <body>
 
+    <div id="tooltip">File Name</div>
+
     <div id="hud">
-        <button class="btn" onclick="addNewCrystal()">Add Crystal</button>
-        <div style="text-align: center;">
-            <div style="font-size: 10px; color: #0ff; margin-bottom: 4px;">OLYMPUS STORAGE: 1.2 / 2.0 GB</div>
+        <button class="btn" onclick="addCrystal()">Add Crystal</button>
+        <div id="storage-container">
+            <div style="font-size: 9px; color: var(--neon-cyan);">OLYMPUS: 1.2 GB / 2.0 GB</div>
             <div id="storage-bar"><div id="storage-fill"></div></div>
         </div>
         <button class="btn" style="border-color: #f0f; color: #f0f;">Upgrade</button>
         <button class="btn">My Vault</button>
     </div>
 
-    <div id="crystal-popup">
-        <input type="text" id="crystal-name" value="Crystal #1">
+    <div id="popup">
+        <input type="text" id="crystal-name-input" value="CRYSTAL_DATA_01">
         <br>
-        <button class="btn">Upload to Olympus</button>
-        <p style="font-size: 12px; margin-top: 15px;">Set Bloom Color:</p>
-        <input type="color" id="bloom-color" value="#00ffff" style="cursor:pointer; border:none; background:none; width:50px; height:50px;">
+        <button class="btn" style="margin-bottom: 10px;">Upload File</button>
+        <div style="font-size: 11px; margin: 10px 0;">GLOW COLOR</div>
+        <input type="color" id="color-picker" value="#00ffff" style="background:none; border:none; cursor:pointer;">
         <br><br>
-        <button class="btn" onclick="closePopup()">Save & Close</button>
+        <button class="btn" onclick="saveAndClose()">Save to Olympus</button>
     </div>
 
     <script type="importmap">
@@ -71,112 +108,171 @@
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [];
         let crystalCount = 10;
+        let selectedCrystal = null;
+
+        const tooltip = document.getElementById('tooltip');
 
         init();
         animate();
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 6, 12);
+            // Camera positioned high, looking down
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 12, 12);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.toneMapping = THREE.ReinhardToneMapping;
             document.body.appendChild(renderer.domElement);
 
-            // Textures from your Assets folder
             const loader = new THREE.TextureLoader();
-            const crystalTexture = loader.load('assets/1776228269143.png');
-            const domeTexture = loader.load('assets/1776228660207.png');
+            const crystalTex = loader.load('assets/1776228269143.png');
+            const domeTex = loader.load('assets/1776228660207.png');
+            const floorTex = loader.load('assets/1776235626011.png');
 
-            // Set up Bloom (Automotive Glow)
+            // 1. DOME (Outer shell)
+            const domeGeo = new THREE.SphereGeometry(30, 32, 32);
+            const domeMat = new THREE.MeshBasicMaterial({ map: domeTex, side: THREE.BackSide, transparent: true, opacity: 0.4 });
+            scene.add(new THREE.Mesh(domeGeo, domeMat));
+
+            // 2. FLOOR (The center platform)
+            const floorGeo = new THREE.CircleGeometry(10, 64);
+            const floorMat = new THREE.MeshStandardMaterial({ map: floorTex, metalness: 0.9, roughness: 0.1 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -2;
+            scene.add(floor);
+
+            // 3. BLOOM (Automotive light glow)
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.1;
-            bloomPass.strength = 1.8;
+            bloomPass.strength = 2.0; 
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // Fortress Dome
-            const domeGeo = new THREE.SphereGeometry(25, 32, 32);
-            const domeMat = new THREE.MeshBasicMaterial({ map: domeTexture, side: THREE.BackSide, transparent: true, opacity: 0.6 });
-            scene.add(new THREE.Mesh(domeGeo, domeMat));
+            // 4. PARTICLES
+            createParticles();
 
-            // Create Initial Crystals
+            // 5. INITIAL CRYSTALS
             for (let i = 0; i < crystalCount; i++) createCrystal(i);
 
             // Interaction
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
             controls = new OrbitControls(camera, renderer.domElement);
-            window.addEventListener('click', onInteract);
+            controls.target.set(0, 0, 0); // Lock view to center
+            controls.enablePan = false;
+            controls.maxDistance = 20;
+            controls.minDistance = 5;
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('click', onClick);
+            window.addEventListener('resize', onResize);
         }
 
         function createCrystal(i) {
             const angle = (i / crystalCount) * Math.PI * 2;
-            const radius = 6;
+            const radius = 7;
+            const geo = new THREE.CylinderGeometry(0.5, 0.4, 3.5, 6);
+            const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
             
-            // Hexagonal Crystal Geometry
-            const geo = new THREE.CylinderGeometry(0.6, 0.6, 4, 6);
-            const loader = new THREE.TextureLoader();
-            const tex = loader.load('assets/1776228269143.png');
-            
-            // Material 1 is the top/bottom cap, Material 2 is the side
             const mat = new THREE.MeshStandardMaterial({ 
                 map: tex, 
                 emissive: 0x00ffff, 
-                emissiveIntensity: 0.5,
-                metalness: 0.8,
+                emissiveIntensity: 0.6,
+                metalness: 0.7,
                 roughness: 0.2
             });
 
             const crystal = new THREE.Mesh(geo, mat);
-            crystal.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            crystal.userData = { name: `Crystal #${i + 1}` };
+            crystal.position.set(Math.cos(angle) * radius, -0.5, Math.sin(angle) * radius);
+            crystal.userData = { name: `UNNAMED_CORE_${i + 1}`, color: '#00ffff' };
+            
             scene.add(crystal);
             crystals.push(crystal);
         }
 
-        function onInteract(e) {
+        function createParticles() {
+            const pGeo = new THREE.BufferGeometry();
+            const pCount = 800;
+            const pos = new Float32Array(pCount * 3);
+            for(let i=0; i<pCount*3; i++) pos[i] = (Math.random()-0.5)*40;
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            const pMat = new THREE.PointsMaterial({ size: 0.05, color: 0xffffff, transparent: true, opacity: 0.5 });
+            scene.add(new THREE.Points(pGeo, pMat));
+        }
+
+        function onMouseMove(e) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(crystals);
 
             if (intersects.length > 0) {
-                const target = intersects[0].object;
-                gsap.to(target.position, { y: 1.2, duration: 0.6, ease: "back.out(1.7)" });
+                const obj = intersects[0].object;
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.clientX + 15 + 'px';
+                tooltip.style.top = e.clientY + 15 + 'px';
+                tooltip.innerHTML = obj.userData.name;
+                document.body.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                document.body.style.cursor = 'default';
+            }
+        }
 
-                document.getElementById('crystal-popup').style.display = 'block';
-                document.getElementById('crystal-name').value = target.userData.name;
+        function onClick() {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(crystals);
 
-                document.getElementById('bloom-color').oninput = (ce) => {
-                    target.material.emissive.set(ce.target.value);
-                    target.material.color.set(ce.target.value);
+            if (intersects.length > 0) {
+                selectedCrystal = intersects[0].object;
+                // Rise 1 inch (0.3 units)
+                gsap.to(selectedCrystal.position, { y: 1.5, duration: 0.6, ease: "power2.out" });
+                
+                document.getElementById('popup').style.display = 'block';
+                document.getElementById('crystal-name-input').value = selectedCrystal.userData.name;
+                document.getElementById('color-picker').value = selectedCrystal.userData.color;
+
+                document.getElementById('color-picker').oninput = (e) => {
+                    const col = e.target.value;
+                    selectedCrystal.material.emissive.set(col);
+                    selectedCrystal.userData.color = col;
                 };
             }
         }
 
-        window.closePopup = function() {
-            document.getElementById('crystal-popup').style.display = 'none';
-            crystals.forEach(c => gsap.to(c.position, { y: 0, duration: 0.5 }));
+        window.saveAndClose = function() {
+            if(selectedCrystal) {
+                selectedCrystal.userData.name = document.getElementById('crystal-name-input').value;
+                gsap.to(selectedCrystal.position, { y: -0.5, duration: 0.5 });
+            }
+            document.getElementById('popup').style.display = 'none';
         }
 
-        window.addNewCrystal = function() {
+        window.addCrystal = function() {
             crystalCount++;
-            // Re-calculate positions for the carousel ring
             crystals.forEach((c, i) => {
                 const angle = (i / crystalCount) * Math.PI * 2;
-                gsap.to(c.position, { x: Math.cos(angle) * 6, z: Math.sin(angle) * 6, duration: 1 });
+                gsap.to(c.position, { x: Math.cos(angle) * 7, z: Math.sin(angle) * 7, duration: 1 });
             });
             createCrystal(crystalCount - 1);
         }
 
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
         function animate() {
             requestAnimationFrame(animate);
-            scene.rotation.y += 0.001; // Slow carousel rotation
+            scene.rotation.y += 0.001; // Slow Carousel
             composer.render();
         }
     </script>

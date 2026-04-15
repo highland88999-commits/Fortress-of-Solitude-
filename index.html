@@ -124,32 +124,32 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMappingExposure = 1.0;
+            renderer.toneMappingExposure = 0.95;
             document.body.appendChild(renderer.domElement);
 
             const loader = new THREE.TextureLoader();
 
-            // Ethereal layered dome
+            // Dome layers
             const domeGeo = new THREE.SphereGeometry(48, 64, 64);
             
             const outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.16 
+                side: THREE.BackSide, transparent: true, opacity: 0.14 
             }));
             scene.add(outerDome);
 
             const innerDome = new THREE.Mesh(new THREE.SphereGeometry(47.2, 64, 64), new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228269143.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.10, blending: THREE.AdditiveBlending 
+                side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
             }));
             scene.add(innerDome);
 
-            // Central holographic floor - true color, minimal bloom
+            // Floor - controlled brightness, true color uploads
             const floorGeo = new THREE.CircleGeometry(11.5, 96);
             const floorMat = new THREE.MeshBasicMaterial({ 
                 color: 0xffffff,
                 transparent: true, 
-                opacity: 0.94, 
+                opacity: 0.75,           // Lowered to reduce base brightness
                 blending: THREE.AdditiveBlending, 
                 side: THREE.DoubleSide 
             });
@@ -158,22 +158,20 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // Bloom tuned: higher threshold = much less bloom on floor/center
+            // Bloom - high threshold so floor stays clean
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight), 
-                0.75,   // reduced strength
-                0.85,   // radius
-                0.75    // higher threshold → only very bright crystals bloom strongly
+                0.65,   // lower strength
+                0.8, 
+                0.85    // high threshold - only crystals bloom noticeably
             );
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // Create crystals
             for (let i = 0; i < crystalCount; i++) createNode(i);
 
-            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.08;
@@ -189,7 +187,6 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // Floor upload handler
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -224,7 +221,7 @@
             const mat = new THREE.MeshStandardMaterial({ 
                 map: tex, 
                 emissive: 0x00ffff, 
-                emissiveIntensity: 0.65,   // lowered so floor doesn't get over-bloomed
+                emissiveIntensity: 0.55,   // controlled glow
                 metalness: 0.9, 
                 roughness: 0.1 
             });
@@ -265,7 +262,7 @@
                     document.getElementById('hologram-upload').click();
                 } else {
                     selectedNode = obj;
-                    gsap.to(selectedNode.position, { y: 3.2, duration: 0.4, ease: "power2.out" });
+                    gsap.to(selectedNode.position, { y: 3.2, duration: 0.4 });
                     document.getElementById('popup').style.display = 'block';
                     document.getElementById('node-name').value = selectedNode.userData.name;
                     document.getElementById('color-picker').value = selectedNode.userData.color;
@@ -286,7 +283,7 @@
         window.saveAndClose = function() {
             if (selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
-                gsap.to(selectedNode.position, { y: 2.1, duration: 0.4, ease: "power2.in" });
+                gsap.to(selectedNode.position, { y: 2.1, duration: 0.4 });
             }
             document.getElementById('popup').style.display = 'none';
             selectedNode = null;
@@ -294,14 +291,12 @@
 
         window.spawnCrystal = function() {
             crystalCount++;
-            const newAngle = ((crystalCount - 1) / crystalCount) * Math.PI * 2;
             crystals.forEach((c, i) => {
                 const angle = (i / crystalCount) * Math.PI * 2;
                 gsap.to(c.position, { 
                     x: Math.cos(angle) * 10.2, 
                     z: Math.sin(angle) * 10.2, 
-                    duration: 1.1, 
-                    ease: "power2.inOut" 
+                    duration: 1.1 
                 });
             });
             createNode(crystalCount - 1);

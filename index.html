@@ -59,7 +59,7 @@
         <div id="popup">
             <input type="text" id="node-name" value="CRYSTAL_CORE">
             <button class="btn" style="width:100%; margin-bottom:15px;">Upload Data File</button>
-            <span style="font-size:10px; letter-spacing:2px;">SELECT ENERGY SPECTRUM</span>
+            <span style="font-size:10px; letter-spacing:2px;">SELECT CORE ENERGY (FULL SPECTRUM)</span>
             <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:45px; border:none; background:none; cursor:pointer;">
             <br><br>
             <button class="btn" onclick="saveAndClose()" style="width:100%;">Sync to Olympus</button>
@@ -117,24 +117,27 @@
 
             const loader = new THREE.TextureLoader();
 
-            // 1. LAYERED DOME 
+            // 1. LAYERED DOME - both graphics wrapped transparently over each other
             const domeGeo = new THREE.SphereGeometry(45, 32, 32);
+            
+            // Outer graphic (slightly larger, more visible overlay)
             const outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.15 
+                side: THREE.BackSide, transparent: true, opacity: 0.20 
             }));
             scene.add(outerDome);
 
+            // Inner graphic (wrapped transparently on top with additive glow)
             const innerDome = new THREE.Mesh(new THREE.SphereGeometry(44.5, 32, 32), new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228269143.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending 
+                side: THREE.BackSide, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending 
             }));
             scene.add(innerDome);
 
-            // 2. SHARP HOLOGRAPHIC FLOOR
+            // 2. SHARP HOLOGRAPHIC FLOOR (dimmed initially to control bloom)
             const floorGeo = new THREE.CircleGeometry(12, 64);
             const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0x888888, // Dimmed to prevent bloom bleed
+                color: 0x888888, 
                 transparent: true, 
                 opacity: 0.8, 
                 blending: THREE.AdditiveBlending, 
@@ -145,9 +148,14 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // 3. BLOOM CALIBRATION (Threshold raised to 0.4 to protect floor)
+            // 3. BLOOM - reduced effect on floor (higher threshold + slightly lower strength)
             const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.8, 0.4);
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight), 
+                0.85,   // strength reduced
+                0.8,    // radius
+                0.50    // threshold raised further to protect floor from bloom bleed
+            );
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
@@ -169,17 +177,27 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // FLOOR HANDLER
+            // FLOOR PROJECTION UPLOAD (photo OR autoplaying looping video)
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
+                if (!file) return;
                 const url = URL.createObjectURL(file);
+                
                 if (file.type.startsWith('video')) {
                     const video = document.createElement('video');
-                    video.src = url; video.autoplay = true; video.loop = true; video.muted = true; video.play();
+                    video.src = url;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.play().catch(() => {}); // silent fail-safe
                     floorMesh.material.map = new THREE.VideoTexture(video);
                 } else {
                     floorMesh.material.map = loader.load(url);
                 }
+                
+                // Full-color projection (remove dim tint so photo/video appears bright and true-to-source)
+                floorMesh.material.color.setHex(0xffffff);
                 floorMesh.material.needsUpdate = true;
             });
         }
@@ -190,7 +208,11 @@
             const geo = new THREE.CylinderGeometry(0.5, 0.4, 4, 6);
             const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
             const mat = new THREE.MeshStandardMaterial({ 
-                map: tex, emissive: 0x00ffff, emissiveIntensity: 0.6, metalness: 0.8, roughness: 0.2 
+                map: tex, 
+                emissive: 0x00ffff, 
+                emissiveIntensity: 0.6, 
+                metalness: 0.8, 
+                roughness: 0.2 
             });
             const node = new THREE.Mesh(geo, mat);
             node.position.set(Math.cos(angle)*radius, 1, Math.sin(angle)*radius);
@@ -205,6 +227,7 @@
             raycaster.setFromCamera(mouse, camera);
             const hits = raycaster.intersectObjects(crystals);
             const tooltip = document.getElementById('tooltip');
+            
             if (hits.length > 0) {
                 tooltip.style.display = 'block';
                 tooltip.style.left = e.clientX + 15 + 'px';
@@ -220,6 +243,7 @@
         function onAction() {
             raycaster.setFromCamera(mouse, camera);
             const hits = raycaster.intersectObjects([...crystals, floorMesh]);
+
             if (hits.length > 0) {
                 const obj = hits[0].object;
                 if (obj.userData.isFloor) {
@@ -230,14 +254,19 @@
                     document.getElementById('popup').style.display = 'block';
                     document.getElementById('node-name').value = selectedNode.userData.name;
                     document.getElementById('color-picker').value = selectedNode.userData.color;
+
+                    // Fixed & live color changer (full spectrum supported by native <input type="color">)
                     document.getElementById('color-picker').oninput = (e) => {
                         const col = e.target.value;
                         selectedNode.material.emissive.set(col);
                         selectedNode.material.color.set(col);
                         selectedNode.userData.color = col;
+                        selectedNode.material.needsUpdate = true; // ensure instant visual update
                     };
                 }
-            } else { saveAndClose(); }
+            } else {
+                saveAndClose();
+            }
         }
 
         window.saveAndClose = function() {
@@ -258,18 +287,18 @@
             createNode(crystalCount - 1);
         }
 
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
             composer.render();
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>

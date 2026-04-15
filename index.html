@@ -8,7 +8,6 @@
         :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.95); }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
         
-        /* HUD UI */
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 10;
@@ -18,17 +17,31 @@
         #bottom-bar {
             pointer-events: auto; width: 100%; max-width: 650px; margin: 0 auto 30px auto;
             background: linear-gradient(180deg, rgba(0,255,255,0.05) 0%, var(--bg) 100%);
-            border: 1px solid rgba(0,255,255,0.2); border-radius: 20px;
-            padding: 15px 25px; display: flex; align-items: center; justify-content: space-around;
+            border: 1px solid rgba(0,255,255,0.3); 
+            border-radius: 30px;
+            padding: 12px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
             backdrop-filter: blur(15px);
         }
 
         .btn {
-            background: rgba(0,0,0,0.5); border: 1px solid var(--cyan); color: var(--cyan);
-            padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 11px;
-            text-transform: uppercase; font-weight: bold; transition: 0.3s;
+            background: rgba(0,0,0,0.6); 
+            border: 1px solid var(--cyan); 
+            color: var(--cyan);
+            padding: 10px 22px; 
+            border-radius: 30px; 
+            cursor: pointer; 
+            font-size: 11px;
+            text-transform: uppercase; 
+            font-weight: bold; 
+            transition: 0.3s;
         }
-        .btn:hover { box-shadow: 0 0 15px var(--cyan); background: rgba(0,255,255,0.2); }
+        .btn:hover { 
+            box-shadow: 0 0 15px var(--cyan); 
+            background: rgba(0,255,255,0.25); 
+        }
 
         #popup {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -66,15 +79,14 @@
         </div>
 
         <div id="bottom-bar">
-            <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
-            <div style="text-align:center">
-                <div style="font-size: 9px; color: var(--cyan); margin-bottom:5px;">VAULT CAPACITY: 1.2 / 2.0 GB</div>
-                <div style="width:140px; height:4px; background:#111; border-radius:2px;">
+            <button class="btn" onclick="spawnCrystal()">ADD CRYSTAL</button>
+            <div style="text-align:center; flex: 1;">
+                <div style="font-size: 9px; color: var(--cyan); margin-bottom:4px;">VAULT CAPACITY: 1.2 / 2.0 GB</div>
+                <div style="width:160px; height:4px; background:#111; border-radius:2px; margin:0 auto;">
                     <div style="width:60%; height:100%; background:var(--cyan); box-shadow:0 0 8px var(--cyan);"></div>
                 </div>
             </div>
-            <button class="btn" style="border-color:#f0f; color:#f0f;">Upgrade</button>
-            <button class="btn">Vault Index</button>
+            <button class="btn" style="border-color:#f0f; color:#f0f;">UPGRADE</button>
         </div>
     </div>
 
@@ -117,29 +129,27 @@
 
             const loader = new THREE.TextureLoader();
 
-            // 1. LAYERED DOME - both graphics wrapped transparently over each other
+            // Layered Dome (both graphics transparently layered)
             const domeGeo = new THREE.SphereGeometry(45, 32, 32);
             
-            // Outer graphic (slightly larger, more visible overlay)
             const outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
                 side: THREE.BackSide, transparent: true, opacity: 0.20 
             }));
             scene.add(outerDome);
 
-            // Inner graphic (wrapped transparently on top with additive glow)
             const innerDome = new THREE.Mesh(new THREE.SphereGeometry(44.5, 32, 32), new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228269143.png'), 
                 side: THREE.BackSide, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending 
             }));
             scene.add(innerDome);
 
-            // 2. SHARP HOLOGRAPHIC FLOOR (dimmed initially to control bloom)
+            // Holographic Floor - TRUE COLOR projection
             const floorGeo = new THREE.CircleGeometry(12, 64);
             const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0x888888, 
+                color: 0xffffff,           // Pure white = true color for uploads
                 transparent: true, 
-                opacity: 0.8, 
+                opacity: 0.95, 
                 blending: THREE.AdditiveBlending, 
                 side: THREE.DoubleSide 
             });
@@ -148,22 +158,22 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // 3. BLOOM - reduced effect on floor (higher threshold + slightly lower strength)
+            // Bloom - tuned to keep floor clean while crystals glow
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight), 
-                0.85,   // strength reduced
+                0.85,   // strength
                 0.8,    // radius
-                0.50    // threshold raised further to protect floor from bloom bleed
+                0.55    // threshold (higher = less bloom on floor)
             );
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // 4. CRYSTALS
+            // Create initial crystals
             for (let i = 0; i < crystalCount; i++) createNode(i);
 
-            // 5. CONTROLS
+            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
@@ -177,7 +187,7 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // FLOOR PROJECTION UPLOAD (photo OR autoplaying looping video)
+            // Floor upload handler - true color projection
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -190,13 +200,13 @@
                     video.loop = true;
                     video.muted = true;
                     video.playsInline = true;
-                    video.play().catch(() => {}); // silent fail-safe
+                    video.play().catch(() => {});
                     floorMesh.material.map = new THREE.VideoTexture(video);
                 } else {
                     floorMesh.material.map = loader.load(url);
                 }
                 
-                // Full-color projection (remove dim tint so photo/video appears bright and true-to-source)
+                // Force true color
                 floorMesh.material.color.setHex(0xffffff);
                 floorMesh.material.needsUpdate = true;
             });
@@ -207,13 +217,15 @@
             const radius = 9;
             const geo = new THREE.CylinderGeometry(0.5, 0.4, 4, 6);
             const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
+            
             const mat = new THREE.MeshStandardMaterial({ 
                 map: tex, 
                 emissive: 0x00ffff, 
-                emissiveIntensity: 0.6, 
-                metalness: 0.8, 
-                roughness: 0.2 
+                emissiveIntensity: 0.65, 
+                metalness: 0.85, 
+                roughness: 0.15 
             });
+
             const node = new THREE.Mesh(geo, mat);
             node.position.set(Math.cos(angle)*radius, 1, Math.sin(angle)*radius);
             node.userData = { name: `NODE_ID_${i+1}`, color: '#00ffff' };
@@ -255,13 +267,12 @@
                     document.getElementById('node-name').value = selectedNode.userData.name;
                     document.getElementById('color-picker').value = selectedNode.userData.color;
 
-                    // Fixed & live color changer (full spectrum supported by native <input type="color">)
                     document.getElementById('color-picker').oninput = (e) => {
                         const col = e.target.value;
                         selectedNode.material.emissive.set(col);
                         selectedNode.material.color.set(col);
                         selectedNode.userData.color = col;
-                        selectedNode.material.needsUpdate = true; // ensure instant visual update
+                        selectedNode.material.needsUpdate = true;
                     };
                 }
             } else {

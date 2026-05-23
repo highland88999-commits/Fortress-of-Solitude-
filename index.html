@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Olympus | Personal Fortress Master</title>
     <style>
-        :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.98); }
+        :root { 
+            --cyan: #00ffff; 
+            --bg: rgba(0, 5, 10, 0.98); 
+            --neon-cyan: #00ffff;
+            --panel-dark: rgba(2, 6, 14, 0.97);
+        }
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
         
         #ui-layer {
@@ -47,12 +52,97 @@
             color: var(--cyan); text-shadow: 0 0 15px var(--cyan);
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
+
+        /* MANDATORY AUTHENTICATION SHIELD STYLING */
+        #auth-gateway {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+            background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif;
+        }
+
+        #starfield-matrix-bg {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #001226 0%, #000000 100%);
+            opacity: 0.7;
+        }
+
+        .terminal-card {
+            position: relative; width: 90%; max-width: 460px;
+            background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 24px; padding: 45px 35px; text-align: center;
+            backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08);
+        }
+
+        .neon-brand {
+            color: #fff; font-size: 2.4em; font-weight: 800; letter-spacing: 5px;
+            margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+        }
+
+        .matrix-subtitle {
+            color: var(--neon-cyan); font-size: 10px; letter-spacing: 2px;
+            opacity: 0.8; margin-bottom: 30px; line-height: 1.6;
+        }
+
+        .glow-divider {
+            border: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            margin-bottom: 35px;
+        }
+
+        .auth-actions { display: flex; flex-direction: column; gap: 16px; }
+
+        .auth-btn {
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3);
+            color: #fff; padding: 16px 24px; border-radius: 12px; font-size: 12px;
+            font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+        }
+
+        .auth-btn:hover {
+            border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.06);
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.2); transform: translateY(-2px);
+        }
+
+        .facebook-gate { border-color: rgba(24, 119, 242, 0.4); }
+        .facebook-gate:hover { border-color: #1877f2; background: rgba(24, 119, 242, 0.1); box-shadow: 0 0 25px rgba(24, 119, 242, 0.25); }
+
+        #auth-status-log {
+            margin-top: 25px; font-size: 11px; color: #ff00ff; 
+            letter-spacing: 1.5px; text-transform: uppercase; display: none;
+        }
+
+        .footer-legal {
+            margin-top: 45px; font-size: 9px; color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
     <div id="tooltip">SCANNING...</div>
     <input type="file" id="hologram-upload" style="display:none" accept="image/*,video/*">
+
+    <div id="auth-gateway">
+        <div id="starfield-matrix-bg"></div>
+        <div class="terminal-card">
+            <h1 class="neon-brand">OLYMPUS CORE</h1>
+            <p class="matrix-subtitle">MANDATORY LINK REQUIRED TO INITIALIZE VAULT ENCLOSURE</p>
+            <hr class="glow-divider">
+            
+            <div class="auth-actions">
+                <button class="auth-btn google-gate" onclick="executeSecureAuth('google')">
+                    <span class="btn-icon">🌐</span> Synchronize Google Identity
+                </button>
+                <button class="auth-btn facebook-gate" onclick="executeSecureAuth('facebook')">
+                    <span class="btn-icon">🔷</span> Synchronize Facebook Profile
+                </button>
+            </div>
+            
+            <div id="auth-status-log">CONNECTING TO SECURE SUBSURFACE CHANNELS...</div>
+            <div class="footer-legal">OLYMPUS LLC // DATA FRAGMENTATION HUB © 2026</div>
+        </div>
+    </div>
 
     <div id="ui-layer">
         <div id="popup">
@@ -76,6 +166,10 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <script type="importmap">
         {
             "imports": {
@@ -92,6 +186,82 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
+
+        // FIREBASE MASTER APP CONFIGURATION INITIALIZATION
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-app-id.firebaseapp.com",
+            projectId: "your-app-id",
+            storageBucket: "your-app-id.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Active Isolation State Storage Matrices
+        let currentUserInstance = null;
+        let activeUserVaultSegment = "";
+
+        // Global Execution Hooks for Identity Gates
+        window.executeSecureAuth = function(providerType) {
+            let authProvider;
+            if (providerType === 'google') {
+                authProvider = new firebase.auth.GoogleAuthProvider();
+            } else if (providerType === 'facebook') {
+                authProvider = new firebase.auth.FacebookAuthProvider();
+                authProvider.addScope('email');
+            }
+
+            firebase.auth().signInWithPopup(authProvider)
+                .then(() => {
+                    const statusLog = document.getElementById('auth-status-log');
+                    if (statusLog) {
+                        statusLog.style.display = "block";
+                        statusLog.innerText = "ACCESS GRANTED. INITIALIZING QUANTUM LINK...";
+                    }
+                })
+                .catch((err) => {
+                    console.error("[GATEWAY MALFUNCTION] Handshake rejected:", err);
+                    alert(`Gateway Refused Connection: ${err.message}`);
+                });
+        };
+
+        // Stateful Token State Verification Observer Loop
+        firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
+            const shieldOverlay = document.getElementById('auth-gateway');
+            
+            if (authenticatedUser) {
+                currentUserInstance = authenticatedUser;
+                activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
+                
+                console.log(`[OLYMPUS AUTH] Identity confirmed. Mapping instance storage lane to: ${activeUserVaultSegment}`);
+                
+                // Triggers database fetching array mappings from Cloud Firestore schema mapping routes
+                await initializeUserFortressInstance(authenticatedUser.uid);
+
+                gsap.to(shieldOverlay, { 
+                    opacity: 0, 
+                    duration: 0.7, 
+                    ease: "power2.out",
+                    onComplete: () => {
+                        shieldOverlay.style.display = 'none';
+                    }
+                });
+            } else {
+                currentUserInstance = null;
+                activeUserVaultSegment = "";
+                shieldOverlay.style.display = 'flex';
+                shieldOverlay.style.opacity = '1';
+            }
+        });
+
+        // Database Integration Router Hook
+        async function initializeUserFortressInstance(uid) {
+            console.log(`[OLYMPUS DB] Syncing layout configurations for instance segment: ${uid}`);
+            // This hook will pull metadata coordinates to feed rebuildCrystalsFromSchema maps later
+        }
 
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [];
@@ -188,7 +358,6 @@
         function createNode(i) {
             const angle = (i / crystalCount) * Math.PI * 2;
             const radius = 11;
-            // Rugged Variation
             const height = 4 + Math.random() * 1.5;
             const geo = new THREE.CylinderGeometry(0.5, 0.4, height, 6);
             const tex = new THREE.TextureLoader().load('assets/1776228269143.png');

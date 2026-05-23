@@ -202,6 +202,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="importmap">
@@ -325,7 +326,7 @@
         }
 
         // Reconstruct 3D meshes based on active database schema maps
-        function rebuildCrystalsFromSchema(schema) {
+        window.rebuildCrystalsFromSchema = function(schema) {
             crystals.forEach(c => carouselGroup.remove(c));
             crystals = [];
             crystalCount = schema.length;
@@ -401,8 +402,47 @@
         }
 
         async function dispatchToVaultBypass(zipBlob, manifest) {
-            console.log("[OLYMPUS VAULT] Awaiting secure token link from server engine...");
-            // Step 5 Presigned Upload Bridge links here
+            console.log("[OLYMPUS VAULT] Requesting secure authorization token pass from cloud functions...");
+            
+            try {
+                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
+                const response = await getUploadSignature({ nodeId: manifest.nodeId });
+                
+                const { uploadUrl, fileStorageKey } = response.data;
+                console.log("[OLYMPUS VAULT] Secure link obtained. Streaming compressed shards directly to Backblaze B2...");
+
+                const transferResult = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/zip" },
+                    body: zipBlob
+                });
+
+                if (!transferResult.ok) throw new Error("Network vault channel rejected stream.");
+                console.log("[OLYMPUS VAULT] Shards successfully stored inside sandboxed bucket layer.");
+
+                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
+
+            } catch (err) {
+                console.error("[VAULT_CRITICAL] Upload transmission failed:", err);
+                alert("Transmission crashed. Integrity connection lost.");
+            }
+        }
+
+        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
+            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
+                let matrix = doc.data().crystalMatrix;
+                let idx = selectedNode.userData.index;
+                
+                matrix[idx].fileStorageKey = storageKey;
+                matrix[idx].name = filename;
+                matrix[idx].rawSize = bytesize;
+
+                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
+                    rebuildCrystalsFromSchema(matrix);
+                    calculateHUDQuota(matrix);
+                    saveAndClose();
+                });
+            });
         }
 
         // ERROR-FREE UNZIP & RESTRUCTURE ENGINE
@@ -423,11 +463,13 @@
             tooltip.innerText = "DECRYPTING MATRIX...";
 
             try {
-                // Step 5 will furnish the authorized down-link token pass string here
-                const authorizedDownloadUrl = "STEP_5_SIGNED_URL_FALLBACK"; 
+                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
+                const response = await getDownloadSignature({ fileStorageKey: storageKey });
                 
-                const response = await fetch(authorizedDownloadUrl);
-                const blobData = await response.blob();
+                const authorizedDownloadUrl = response.data.downloadUrl;
+
+                const cloudStream = await fetch(authorizedDownloadUrl);
+                const blobData = await cloudStream.blob();
                 const unzipped = await JSZip.loadAsync(blobData);
                 
                 const manifestRaw = await unzipped.file("manifest.json").async("string");
@@ -473,7 +515,7 @@
             }
         }
 
-        function calculateHUDQuota(matrix) {
+        window.calculateHUDQuota = function(matrix) {
             let totalBytes = 0;
             matrix.forEach(node => totalBytes += (node.rawSize || 0));
             const totalMB = totalBytes / (1024 * 1024);
@@ -607,7 +649,6 @@
                 selectedNode.userData.name = document.getElementById('node-name').value;
                 gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
                 
-                // Live metadata syncing push sequence to Cloud Firestore matching profiles
                 if (currentUserInstance) {
                     db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
                         let matrix = doc.data().crystalMatrix;

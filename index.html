@@ -116,12 +116,45 @@
             margin-top: 45px; font-size: 9px; color: rgba(255, 255, 255, 0.25);
             letter-spacing: 1px;
         }
+
+        /* OVERLAY HOLOFRAME VIEWPORT STYLING */
+        #holoframe-viewer {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 3, 8, 0.92); z-index: 5000;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(25px);
+        }
+        #holoframe-container {
+            width: 85vw; height: 80vh; max-width: 1000px;
+            background: rgba(0, 20, 35, 0.4); border: 1px solid rgba(0, 255, 255, 0.4);
+            border-radius: 20px; display: flex; flex-direction: column;
+            overflow: hidden; box-shadow: 0 0 100px rgba(0,255,255,0.15);
+        }
+        #holoframe-header {
+            padding: 15px 25px; border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0, 10, 20, 0.6);
+        }
+        #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 3px; text-shadow: 0 0 10px #0ff; }
+        #holoframe-content { flex: 1; padding: 30px; display: flex; justify-content: center; align-items: center; overflow: auto; }
+        #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 30px rgba(0,255,255,0.3); }
+        #holoframe-content iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div id="tooltip">SCANNING...</div>
-    <input type="file" id="hologram-upload" style="display:none" accept="image/*,video/*">
+    <input type="file" id="hologram-upload" style="display:none">
+
+    <div id="holoframe-viewer" onclick="closeHoloframe()">
+        <div id="holoframe-container" onclick="event.stopPropagation()">
+            <div id="holoframe-header">
+                <span id="holo-title">REMATERIALIZED KNOWLEDGE FRAGMENT</span>
+                <button class="btn" style="padding: 5px 10px;" onclick="closeHoloframe()">✕</button>
+            </div>
+            <div id="holoframe-content"></div>
+        </div>
+    </div>
 
     <div id="auth-gateway">
         <div id="starfield-matrix-bg"></div>
@@ -147,7 +180,7 @@
     <div id="ui-layer">
         <div id="popup">
             <input type="text" id="node-name" value="CRYSTAL_NODE">
-            <button class="btn" style="width:100%; margin-bottom:20px;">Upload to Olympus</button>
+            <button class="btn" style="width:100%; margin-bottom:20px;" onclick="triggerFileSelection()">Upload to Olympus</button>
             <span style="font-size:10px; letter-spacing:3px; color:var(--cyan);">ENERGY SPECTRUM</span>
             <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:50px; border:none; background:none; cursor:pointer; margin-top:10px;">
             <br><br>
@@ -157,9 +190,9 @@
         <div id="bottom-bar">
             <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
             <div style="text-align:center; flex:1; padding: 0 20px;">
-                <div style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">VAULT LOAD: 1.2 / 2.0 GB</div>
+                <div id="hud-capacity-text" style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">VAULT LOAD: 0.00 / 2000.00 MB</div>
                 <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px;">
-                    <div style="width:60%; height:100%; background:var(--cyan); box-shadow:0 0 12px var(--cyan);"></div>
+                    <div id="hud-capacity-bar" style="width:0%; height:100%; background:var(--cyan); box-shadow:0 0 12px var(--cyan); transition: width 0.5s;"></div>
                 </div>
             </div>
             <button class="btn" style="border-color:#ff00ff; color:#ff00ff;">Upgrade</button>
@@ -169,6 +202,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="importmap">
         {
@@ -238,7 +272,6 @@
                 
                 console.log(`[OLYMPUS AUTH] Identity confirmed. Mapping instance storage lane to: ${activeUserVaultSegment}`);
                 
-                // Triggers database fetching array mappings from Cloud Firestore schema mapping routes
                 await initializeUserFortressInstance(authenticatedUser.uid);
 
                 gsap.to(shieldOverlay, { 
@@ -260,7 +293,195 @@
         // Database Integration Router Hook
         async function initializeUserFortressInstance(uid) {
             console.log(`[OLYMPUS DB] Syncing layout configurations for instance segment: ${uid}`);
-            // This hook will pull metadata coordinates to feed rebuildCrystalsFromSchema maps later
+            const docRef = db.collection("fortresses").doc(uid);
+            
+            try {
+                const doc = await docRef.get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    console.log("[OLYMPUS MAP] Core data matrix retrieved. Building 3D geometry...");
+                    rebuildCrystalsFromSchema(data.crystalMatrix || []);
+                    calculateHUDQuota(data.crystalMatrix || []);
+                } else {
+                    console.log("[OLYMPUS MAP] No instance file located. Building factory starter array...");
+                    const starterMatrix = [];
+                    for (let i = 0; i < 12; i++) {
+                        starterMatrix.push({
+                            id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                            name: `UNALLOCATED_CORE_${(i+1).toString().padStart(2, '0')}`,
+                            color: "#00ffff",
+                            height: 4 + Math.random() * 1.5,
+                            fileStorageKey: "", 
+                            rawSize: 0
+                        });
+                    }
+                    await docRef.set({ crystalMatrix: starterMatrix });
+                    rebuildCrystalsFromSchema(starterMatrix);
+                    calculateHUDQuota(starterMatrix);
+                }
+            } catch (err) {
+                console.error("[MAP_CRITICAL] Firestore synchronization failed:", err);
+            }
+        }
+
+        // Reconstruct 3D meshes based on active database schema maps
+        function rebuildCrystalsFromSchema(schema) {
+            crystals.forEach(c => carouselGroup.remove(c));
+            crystals = [];
+            crystalCount = schema.length;
+
+            schema.forEach((nodeData, i) => {
+                const angle = (i / crystalCount) * Math.PI * 2;
+                const radius = 11;
+                
+                const geo = new THREE.CylinderGeometry(0.5, 0.4, nodeData.height, 6);
+                const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
+                
+                const mat = new THREE.MeshStandardMaterial({ 
+                    map: tex, 
+                    emissive: new THREE.Color(nodeData.color), 
+                    emissiveIntensity: 0.5, 
+                    metalness: 0.9, 
+                    roughness: 0.1 
+                });
+
+                const node = new THREE.Mesh(geo, mat);
+                node.position.set(Math.cos(angle) * radius, nodeData.height / 2, Math.sin(angle) * radius);
+                
+                node.userData = { ...nodeData, index: i };
+                
+                carouselGroup.add(node);
+                crystals.push(node);
+            });
+        }
+
+        // Triggered when file input picks up a user payload
+        async function stagePayloadCompression(file) {
+            if (!file || !selectedNode) return;
+
+            console.log(`[OLYMPUS SLICER] Initializing fragmentation protocols on: ${file.name}`);
+            const CHUNK_SIZE = 64 * 1024; // 64KB micro-shards
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const zip = new JSZip();
+
+            const manifest = {
+                originName: file.name,
+                mimeType: file.type,
+                rawSizeBytes: file.size,
+                totalFragments: totalChunks,
+                timestamp: Date.now(),
+                nodeId: selectedNode.userData.id
+            };
+            
+            zip.file("manifest.json", JSON.stringify(manifest));
+
+            let currentByteBound = 0;
+            for (let i = 0; i < totalChunks; i++) {
+                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
+                const arrayBufferShard = await fileSlice.arrayBuffer();
+                
+                const shardName = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
+                zip.file(shardName, arrayBufferShard, { binary: true });
+                
+                currentByteBound += CHUNK_SIZE;
+            }
+
+            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
+
+            console.log("[OLYMPUS SLICER] Shards structured. Compressing core matrix...");
+            const compressedZipBlob = await zip.generateAsync({ 
+                type: "blob", 
+                compression: "DEFLATE", 
+                compressionOptions: { level: 9 } 
+            });
+
+            console.log(`[OLYMPUS SLICER] Complete. Compressed footprint: ${(compressedZipBlob.size / 1024 / 1024).toFixed(2)} MB`);
+
+            dispatchToVaultBypass(compressedZipBlob, manifest);
+        }
+
+        async function dispatchToVaultBypass(zipBlob, manifest) {
+            console.log("[OLYMPUS VAULT] Awaiting secure token link from server engine...");
+            // Step 5 Presigned Upload Bridge links here
+        }
+
+        // ERROR-FREE UNZIP & RESTRUCTURE ENGINE
+        async function rematerializeNodeCore(nodeMesh) {
+            const storageKey = nodeMesh.userData.fileStorageKey;
+            if (!storageKey) {
+                selectedNode = nodeMesh;
+                gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
+                document.getElementById('popup').style.display = 'block';
+                document.getElementById('node-name').value = selectedNode.userData.name;
+                document.getElementById('color-picker').value = selectedNode.userData.color;
+                return;
+            }
+
+            console.log("[OLYMPUS RECEIVER] Intercepting data wormhole stream...");
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'block';
+            tooltip.innerText = "DECRYPTING MATRIX...";
+
+            try {
+                // Step 5 will furnish the authorized down-link token pass string here
+                const authorizedDownloadUrl = "STEP_5_SIGNED_URL_FALLBACK"; 
+                
+                const response = await fetch(authorizedDownloadUrl);
+                const blobData = await response.blob();
+                const unzipped = await JSZip.loadAsync(blobData);
+                
+                const manifestRaw = await unzipped.file("manifest.json").async("string");
+                const manifest = JSON.parse(manifestRaw);
+
+                let compiledBuffers = [];
+                for (let i = 0; i < manifest.totalFragments; i++) {
+                    const key = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
+                    const chunkBuffer = await unzipped.file(key).async("arraybuffer");
+                    compiledBuffers.push(chunkBuffer);
+                }
+
+                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
+                const runtimeURL = URL.createObjectURL(reconstructedBlob);
+
+                tooltip.style.display = 'none';
+                renderHoloframeContent(runtimeURL, manifest);
+
+            } catch (err) {
+                console.error("Restructure crashed. Integrity violation.", err);
+                tooltip.innerText = "SIGNAL LOSS ERROR";
+            }
+        }
+
+        function renderHoloframeContent(url, meta) {
+            const viewer = document.getElementById('holoframe-viewer');
+            const target = document.getElementById('holoframe-content');
+            target.innerHTML = ""; 
+            viewer.style.display = "flex";
+
+            if (meta.mimeType.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = url;
+                target.appendChild(img);
+            } else if (meta.mimeType.startsWith('video/')) {
+                const vid = document.createElement('video');
+                vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true;
+                target.appendChild(vid);
+            } else {
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                target.appendChild(iframe);
+            }
+        }
+
+        function calculateHUDQuota(matrix) {
+            let totalBytes = 0;
+            matrix.forEach(node => totalBytes += (node.rawSize || 0));
+            const totalMB = totalBytes / (1024 * 1024);
+            const quotaMaxMB = 2000.00;
+            const percentage = Math.min((totalMB / quotaMaxMB) * 100, 100);
+            
+            document.getElementById('hud-capacity-text').innerText = `VAULT LOAD: ${totalMB.toFixed(2)} / ${quotaMaxMB.toFixed(2)} MB`;
+            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
         }
 
         let scene, camera, renderer, composer, controls, raycaster, mouse;
@@ -319,9 +540,6 @@
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // 4. NODES
-            for (let i = 0; i < crystalCount; i++) createNode(i);
-
             // 5. CONTROLS
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
@@ -337,40 +555,16 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // FLOOR UPLOAD SYSTEM
+            // CONNECT INPUT CLICKS TO SLICER MATRIX 
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                const url = URL.createObjectURL(file);
-                if (file.type.startsWith('video')) {
-                    const video = document.createElement('video');
-                    video.src = url; video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true; video.play();
-                    floorMesh.material.map = new THREE.VideoTexture(video);
-                } else {
-                    floorMesh.material.map = loader.load(url);
+                if(e.target.files.length > 0) {
+                    stagePayloadCompression(e.target.files[0]);
                 }
-                floorMesh.material.color.setHex(0xffffff);
-                floorMesh.material.opacity = 0.9;
-                floorMesh.material.needsUpdate = true;
             });
         }
 
-        function createNode(i) {
-            const angle = (i / crystalCount) * Math.PI * 2;
-            const radius = 11;
-            const height = 4 + Math.random() * 1.5;
-            const geo = new THREE.CylinderGeometry(0.5, 0.4, height, 6);
-            const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
-            
-            const mat = new THREE.MeshStandardMaterial({ 
-                map: tex, emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 
-            });
-
-            const node = new THREE.Mesh(geo, mat);
-            node.position.set(Math.cos(angle)*radius, height/2, Math.sin(angle)*radius);
-            node.userData = { name: `NODE_${(i+1).toString().padStart(2,'0')}`, color: '#00ffff' };
-            carouselGroup.add(node);
-            crystals.push(node);
+        window.triggerFileSelection = function() {
+            document.getElementById('hologram-upload').click();
         }
 
         function onHover(e) {
@@ -380,14 +574,14 @@
             const hits = raycaster.intersectObjects(crystals);
             const tooltip = document.getElementById('tooltip');
             
-            if (hits.length > 0) {
+            if (hits.length > 0 && !selectedNode) {
                 tooltip.style.display = 'block';
                 tooltip.style.left = `${e.clientX + 20}px`;
                 tooltip.style.top = `${e.clientY + 20}px`;
                 tooltip.innerText = hits[0].object.userData.name;
                 document.body.style.cursor = 'pointer';
             } else {
-                tooltip.style.display = 'none';
+                if(tooltip.innerText !== "DECRYPTING MATRIX...") tooltip.style.display = 'none';
                 document.body.style.cursor = 'default';
             }
         }
@@ -401,26 +595,28 @@
                 if (obj.userData.isFloor) {
                     document.getElementById('hologram-upload').click();
                 } else {
-                    selectedNode = obj;
-                    gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
-                    document.getElementById('popup').style.display = 'block';
-                    document.getElementById('node-name').value = selectedNode.userData.name;
-                    document.getElementById('color-picker').value = selectedNode.userData.color;
-
-                    document.getElementById('color-picker').oninput = (e) => {
-                        const col = e.target.value;
-                        selectedNode.material.emissive.set(col);
-                        selectedNode.material.color.set(col);
-                        selectedNode.userData.color = col;
-                    };
+                    rematerializeNodeCore(obj);
                 }
-            } else { saveAndClose(); }
+            } else { 
+                if(document.getElementById('popup').style.display === 'block') saveAndClose(); 
+            }
         }
 
         window.saveAndClose = function() {
             if(selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
                 gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
+                
+                // Live metadata syncing push sequence to Cloud Firestore matching profiles
+                if (currentUserInstance) {
+                    db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
+                        let matrix = doc.data().crystalMatrix;
+                        let idx = selectedNode.userData.index;
+                        matrix[idx].name = selectedNode.userData.name;
+                        matrix[idx].color = selectedNode.userData.color;
+                        db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix });
+                    });
+                }
             }
             document.getElementById('popup').style.display = 'none';
             selectedNode = null;
@@ -432,7 +628,38 @@
                 const angle = (i / crystalCount) * Math.PI * 2;
                 gsap.to(c.position, { x: Math.cos(angle)*11, z: Math.sin(angle)*11, duration: 1 });
             });
-            createNode(crystalCount - 1);
+            
+            const angle = ((crystalCount - 1) / crystalCount) * Math.PI * 2;
+            const radius = 11;
+            const height = 4 + Math.random() * 1.5;
+            const geo = new THREE.CylinderGeometry(0.5, 0.4, height, 6);
+            const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
+            const mat = new THREE.MeshStandardMaterial({ map: tex, emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 });
+            const node = new THREE.Mesh(geo, mat);
+            node.position.set(Math.cos(angle)*radius, height/2, Math.sin(angle)*radius);
+            
+            const newNodeData = {
+                id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                name: `NODE_${crystalCount.toString().padStart(2,'0')}`,
+                color: '#00ffff',
+                height: height,
+                fileStorageKey: "",
+                rawSize: 0,
+                index: crystalCount - 1
+            };
+            node.userData = newNodeData;
+            carouselGroup.add(node);
+            crystals.push(node);
+
+            if (currentUserInstance) {
+                db.collection("fortresses").doc(currentUserInstance.uid).update({
+                    crystalMatrix: firebase.firestore.FieldValue.arrayUnion(newNodeData)
+                });
+            }
+        }
+
+        window.closeHoloframe = function() {
+            document.getElementById('holoframe-viewer').style.display = "none";
         }
 
         function onResize() {
@@ -446,10 +673,7 @@
             requestAnimationFrame(animate);
             controls.update();
             
-            // Carousel Rotation
             carouselGroup.rotation.y += 0.0015;
-            
-            // Shimmering Dome
             innerDome.rotation.y -= 0.0005;
             outerDome.rotation.y += 0.0002;
             

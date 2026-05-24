@@ -53,6 +53,15 @@
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
+        /* HARD-LOCKED FILE INPUT TO PREVENT MOBILE OVERFLOW CLICKS */
+        #hologram-upload {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
         /* SECURE MULTI-PROVIDER AUTHENTICATION SHIELD STYLING */
         #auth-gateway {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -155,7 +164,7 @@
 <body>
 
     <div id="tooltip">SCANNING...</div>
-    <input type="file" id="hologram-upload" style="display:none">
+    <input type="file" id="hologram-upload">
 
     <div id="holoframe-viewer" onclick="closeHoloframe()">
         <div id="holoframe-container" onclick="event.stopPropagation()">
@@ -242,7 +251,8 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // FIREBASE MASTER CONFIGURATION INITIALIZATION - REPLACE PARAMETERS WITH ACTIVE PROJECT KEYS
+        // FIREBASE MASTER CONFIGURATION INITIALIZATION
+        // !! IMPORTANT: Ensure these are your active project keys, not 'YOUR_API_KEY' placeholders !!
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "your-app-id.firebaseapp.com",
@@ -434,7 +444,21 @@
 
             // Bind Slicer Processing Machine Pipeline to upload clicks
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
-                if(e.target.files.length > 0) {
+                // If it's an immediate floor preview vs a crystal upload
+                if (!selectedNode && e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    const url = URL.createObjectURL(file);
+                    if (file.type.startsWith('video')) {
+                        const video = document.createElement('video');
+                        video.src = url; video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true; video.play();
+                        floorMesh.material.map = new THREE.VideoTexture(video);
+                    } else {
+                        floorMesh.material.map = loader.load(url);
+                    }
+                    floorMesh.material.color.setHex(0xffffff);
+                    floorMesh.material.opacity = 0.9;
+                    floorMesh.material.needsUpdate = true;
+                } else if (selectedNode && e.target.files.length > 0) {
                     stagePayloadCompression(e.target.files[0]);
                 }
             });
@@ -557,15 +581,7 @@
         // Bit-Perfect Shard Memory Restructuring Engine
         async function rematerializeNodeCore(nodeMesh) {
             const storageKey = nodeMesh.userData.fileStorageKey;
-            if (!storageKey) {
-                selectedNode = nodeMesh;
-                gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
-                document.getElementById('popup').style.display = 'block';
-                document.getElementById('node-name').value = selectedNode.userData.name;
-                document.getElementById('color-picker').value = selectedNode.userData.color;
-                return;
-            }
-
+            
             console.log("[OLYMPUS RECEIVER] Initializing stream capture reassembly loops...");
             const tooltip = document.getElementById('tooltip');
             tooltip.style.display = 'block';
@@ -657,19 +673,49 @@
             }
         }
 
+        // Updated Raycaster Intersection Routing Event
         function onAction() {
             raycaster.setFromCamera(mouse, camera);
             const hits = raycaster.intersectObjects([...crystals, floorMesh]);
 
             if (hits.length > 0) {
                 const obj = hits[0].object;
+
+                // TARGET A: Floor Interaction
                 if (obj.userData.isFloor) {
+                    console.log("[OLYMPUS VIEWPORT] Floor intersection confirmed. Initiating direct file viewing selection...");
+                    selectedNode = null; // Clear focus so the file input routes to floor mapping
                     document.getElementById('hologram-upload').click();
-                } else {
+                    return;
+                }
+
+                // TARGET B: Crystal Interaction
+                const storageKey = obj.userData.fileStorageKey;
+                selectedNode = obj;
+
+                if (storageKey) {
+                    // Filled Shard -> Extract
+                    console.log(`[OLYMPUS RECEIVER] Core payload detected on shard. Initializing rematerializer: ${obj.userData.name}`);
                     rematerializeNodeCore(obj);
+                } else {
+                    // Empty Shard -> Inject/Edit
+                    console.log(`[OLYMPUS INTERFACE] Shard is unallocated. Accessing credential entry interface panel...`);
+                    
+                    gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
+                    
+                    document.getElementById('popup').style.display = 'block';
+                    document.getElementById('node-name').value = selectedNode.userData.name;
+                    document.getElementById('color-picker').value = selectedNode.userData.color;
+
+                    document.getElementById('color-picker').oninput = (e) => {
+                        const col = e.target.value;
+                        selectedNode.material.emissive.set(col);
+                        selectedNode.material.color.set(col);
+                        selectedNode.userData.color = col;
+                    };
                 }
             } else { 
-                if(document.getElementById('popup').style.display === 'block') saveAndClose(); 
+                if (document.getElementById('popup').style.display === 'block') saveAndClose(); 
             }
         }
 

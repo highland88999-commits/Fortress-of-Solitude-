@@ -53,7 +53,7 @@
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
-        /* MANDATORY AUTHENTICATION SHIELD STYLING */
+        /* SECURE AUTHENTICATION GATEWAY OVERLAY */
         #auth-gateway {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 9999; display: flex; justify-content: center; align-items: center;
@@ -67,7 +67,7 @@
         }
 
         .terminal-card {
-            position: relative; width: 90%; max-width: 460px;
+            position: relative; width: 90%; max-width: 440px;
             background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
             border-radius: 24px; padding: 45px 35px; text-align: center;
             backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08);
@@ -103,9 +103,6 @@
             border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.06);
             box-shadow: 0 0 25px rgba(0, 255, 255, 0.2); transform: translateY(-2px);
         }
-
-        .facebook-gate { border-color: rgba(24, 119, 242, 0.4); }
-        .facebook-gate:hover { border-color: #1877f2; background: rgba(24, 119, 242, 0.1); box-shadow: 0 0 25px rgba(24, 119, 242, 0.25); }
 
         #auth-status-log {
             margin-top: 25px; font-size: 11px; color: #ff00ff; 
@@ -164,11 +161,8 @@
             <hr class="glow-divider">
             
             <div class="auth-actions">
-                <button class="auth-btn google-gate" onclick="executeSecureAuth('google')">
+                <button class="auth-btn google-gate" onclick="executeSecureAuth()">
                     <span class="btn-icon">🌐</span> Synchronize Google Identity
-                </button>
-                <button class="auth-btn facebook-gate" onclick="executeSecureAuth('facebook')">
-                    <span class="btn-icon">🔷</span> Synchronize Facebook Profile
                 </button>
             </div>
             
@@ -222,7 +216,7 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // FIREBASE MASTER APP CONFIGURATION INITIALIZATION
+        // FIREBASE PROJECT PROFILE CONFIGURATION
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "your-app-id.firebaseapp.com",
@@ -235,35 +229,27 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Active Isolation State Storage Matrices
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
 
-        // Global Execution Hooks for Identity Gates
-        window.executeSecureAuth = function(providerType) {
-            let authProvider;
-            if (providerType === 'google') {
-                authProvider = new firebase.auth.GoogleAuthProvider();
-            } else if (providerType === 'facebook') {
-                authProvider = new firebase.auth.FacebookAuthProvider();
-                authProvider.addScope('email');
+        // Mobile-Optimized Google Identity Tunnel Redirect
+        window.executeSecureAuth = function() {
+            const authProvider = new firebase.auth.GoogleAuthProvider();
+            const statusLog = document.getElementById('auth-status-log');
+            
+            if (statusLog) {
+                statusLog.style.display = "block";
+                statusLog.innerText = "REDIRECTING TO SECURE AUTH CHANNEL...";
             }
 
-            firebase.auth().signInWithPopup(authProvider)
-                .then(() => {
-                    const statusLog = document.getElementById('auth-status-log');
-                    if (statusLog) {
-                        statusLog.style.display = "block";
-                        statusLog.innerText = "ACCESS GRANTED. INITIALIZING QUANTUM LINK...";
-                    }
-                })
+            firebase.auth().signInWithRedirect(authProvider)
                 .catch((err) => {
-                    console.error("[GATEWAY MALFUNCTION] Handshake rejected:", err);
-                    alert(`Gateway Refused Connection: ${err.message}`);
+                    console.error("[GATEWAY MALFUNCTION] Connection refused:", err);
+                    alert(`Gateway Error: ${err.message}`);
                 });
         };
 
-        // Stateful Token State Verification Observer Loop
+        // Persistent Authentication State Observer Loop
         firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             
@@ -271,7 +257,7 @@
                 currentUserInstance = authenticatedUser;
                 activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
                 
-                console.log(`[OLYMPUS AUTH] Identity confirmed. Mapping instance storage lane to: ${activeUserVaultSegment}`);
+                console.log(`[OLYMPUS AUTH] Routing verified session lane to: ${activeUserVaultSegment}`);
                 
                 await initializeUserFortressInstance(authenticatedUser.uid);
 
@@ -291,20 +277,19 @@
             }
         });
 
-        // Database Integration Router Hook
+        // Database Structural Mapping Sync Router
         async function initializeUserFortressInstance(uid) {
-            console.log(`[OLYMPUS DB] Syncing layout configurations for instance segment: ${uid}`);
+            console.log(`[OLYMPUS DB] Syncing matrix profile map: ${uid}`);
             const docRef = db.collection("fortresses").doc(uid);
             
             try {
                 const doc = await docRef.get();
                 if (doc.exists) {
                     const data = doc.data();
-                    console.log("[OLYMPUS MAP] Core data matrix retrieved. Building 3D geometry...");
-                    rebuildCrystalsFromSchema(data.crystalMatrix || []);
-                    calculateHUDQuota(data.crystalMatrix || []);
+                    window.rebuildCrystalsFromSchema(data.crystalMatrix || []);
+                    window.calculateHUDQuota(data.crystalMatrix || []);
                 } else {
-                    console.log("[OLYMPUS MAP] No instance file located. Building factory starter array...");
+                    console.log("[OLYMPUS MAP] Generating core baseline schema layout grid...");
                     const starterMatrix = [];
                     for (let i = 0; i < 12; i++) {
                         starterMatrix.push({
@@ -317,15 +302,93 @@
                         });
                     }
                     await docRef.set({ crystalMatrix: starterMatrix });
-                    rebuildCrystalsFromSchema(starterMatrix);
-                    calculateHUDQuota(starterMatrix);
+                    window.rebuildCrystalsFromSchema(starterMatrix);
+                    window.calculateHUDQuota(starterMatrix);
                 }
             } catch (err) {
                 console.error("[MAP_CRITICAL] Firestore synchronization failed:", err);
             }
         }
 
-        // Reconstruct 3D meshes based on active database schema maps
+        let scene, camera, renderer, composer, controls, raycaster, mouse;
+        let crystals = [];
+        let crystalCount = 12;
+        let selectedNode = null;
+        let floorMesh, carouselGroup, innerDome, outerDome;
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 20, 30);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            document.body.appendChild(renderer.domElement);
+
+            const loader = new THREE.TextureLoader();
+            carouselGroup = new THREE.Group();
+            scene.add(carouselGroup);
+
+            // Layered Transparent Ambient Domes
+            const domeGeo = new THREE.SphereGeometry(60, 40, 40);
+            outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
+                map: loader.load('assets/1776228660207.png'), 
+                side: THREE.BackSide, transparent: true, opacity: 0.1 
+            }));
+            scene.add(outerDome);
+
+            innerDome = new THREE.Mesh(new THREE.SphereGeometry(59, 40, 40), new THREE.MeshBasicMaterial({ 
+                map: loader.load('assets/1776228269143.png'), 
+                side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
+            }));
+            scene.add(innerDome);
+
+            // Holographic Surface Viewport Floor Base
+            const floorGeo = new THREE.CircleGeometry(13, 128);
+            const floorMat = new THREE.MeshBasicMaterial({ 
+                color: 0x999999, transparent: true, opacity: 0.7, 
+                blending: THREE.AdditiveBlending, side: THREE.DoubleSide 
+            });
+            floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.userData.isFloor = true;
+            scene.add(floorMesh);
+
+            // Post-Processing Compositing Engine
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.5, 0.85);
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // Interface Camera Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI * 0.45;
+            controls.minDistance = 20;
+            controls.maxDistance = 60;
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            window.addEventListener('mousemove', onHover);
+            window.addEventListener('mousedown', onAction);
+            window.addEventListener('resize', onResize);
+
+            // Connect Interaction Points Directly into the Quantum Slicer Engine
+            document.getElementById('hologram-upload').addEventListener('change', function(e) {
+                if(e.target.files.length > 0) {
+                    stagePayloadCompression(e.target.files[0]);
+                }
+            });
+        }
+
         window.rebuildCrystalsFromSchema = function(schema) {
             crystals.forEach(c => carouselGroup.remove(c));
             crystals = [];
@@ -348,20 +411,18 @@
 
                 const node = new THREE.Mesh(geo, mat);
                 node.position.set(Math.cos(angle) * radius, nodeData.height / 2, Math.sin(angle) * radius);
-                
                 node.userData = { ...nodeData, index: i };
                 
                 carouselGroup.add(node);
                 crystals.push(node);
             });
-        }
+        };
 
-        // Triggered when file input picks up a user payload
         async function stagePayloadCompression(file) {
             if (!file || !selectedNode) return;
 
-            console.log(`[OLYMPUS SLICER] Initializing fragmentation protocols on: ${file.name}`);
-            const CHUNK_SIZE = 64 * 1024; // 64KB micro-shards
+            console.log(`[OLYMPUS SLICER] Executing binary sharding protocol on: ${file.name}`);
+            const CHUNK_SIZE = 64 * 1024; 
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
             const zip = new JSZip();
 
@@ -389,27 +450,22 @@
 
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
 
-            console.log("[OLYMPUS SLICER] Shards structured. Compressing core matrix...");
             const compressedZipBlob = await zip.generateAsync({ 
                 type: "blob", 
                 compression: "DEFLATE", 
                 compressionOptions: { level: 9 } 
             });
 
-            console.log(`[OLYMPUS SLICER] Complete. Compressed footprint: ${(compressedZipBlob.size / 1024 / 1024).toFixed(2)} MB`);
-
             dispatchToVaultBypass(compressedZipBlob, manifest);
         }
 
         async function dispatchToVaultBypass(zipBlob, manifest) {
-            console.log("[OLYMPUS VAULT] Requesting secure authorization token pass from cloud functions...");
-            
+            console.log("[OLYMPUS VAULT] Resolving presigned transaction token allocation parameters...");
             try {
                 const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
                 const response = await getUploadSignature({ nodeId: manifest.nodeId });
                 
                 const { uploadUrl, fileStorageKey } = response.data;
-                console.log("[OLYMPUS VAULT] Secure link obtained. Streaming compressed shards directly to Backblaze B2...");
 
                 const transferResult = await fetch(uploadUrl, {
                     method: "PUT",
@@ -417,14 +473,14 @@
                     body: zipBlob
                 });
 
-                if (!transferResult.ok) throw new Error("Network vault channel rejected stream.");
-                console.log("[OLYMPUS VAULT] Shards successfully stored inside sandboxed bucket layer.");
+                if (!transferResult.ok) throw new Error("Vault boundary dropped file array stream.");
+                console.log("[OLYMPUS VAULT] Package deposited securely into isolated network sector.");
 
                 finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
 
             } catch (err) {
-                console.error("[VAULT_CRITICAL] Upload transmission failed:", err);
-                alert("Transmission crashed. Integrity connection lost.");
+                console.error("[VAULT_CRITICAL] Transmission line collapsed:", err);
+                alert("Vault transaction aborted. Connection baseline lost.");
             }
         }
 
@@ -438,14 +494,13 @@
                 matrix[idx].rawSize = bytesize;
 
                 db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                    rebuildCrystalsFromSchema(matrix);
-                    calculateHUDQuota(matrix);
+                    window.rebuildCrystalsFromSchema(matrix);
+                    window.calculateHUDQuota(matrix);
                     saveAndClose();
                 });
             });
         }
 
-        // ERROR-FREE UNZIP & RESTRUCTURE ENGINE
         async function rematerializeNodeCore(nodeMesh) {
             const storageKey = nodeMesh.userData.fileStorageKey;
             if (!storageKey) {
@@ -457,7 +512,7 @@
                 return;
             }
 
-            console.log("[OLYMPUS RECEIVER] Intercepting data wormhole stream...");
+            console.log("[OLYMPUS RECEIVER] Initializing stream capture reassembly loops...");
             const tooltip = document.getElementById('tooltip');
             tooltip.style.display = 'block';
             tooltip.innerText = "DECRYPTING MATRIX...";
@@ -465,7 +520,6 @@
             try {
                 const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
                 const response = await getDownloadSignature({ fileStorageKey: storageKey });
-                
                 const authorizedDownloadUrl = response.data.downloadUrl;
 
                 const cloudStream = await fetch(authorizedDownloadUrl);
@@ -489,7 +543,7 @@
                 renderHoloframeContent(runtimeURL, manifest);
 
             } catch (err) {
-                console.error("Restructure crashed. Integrity violation.", err);
+                console.error("Reassembly engine failed validation metrics:", err);
                 tooltip.innerText = "SIGNAL LOSS ERROR";
             }
         }
@@ -524,90 +578,11 @@
             
             document.getElementById('hud-capacity-text').innerText = `VAULT LOAD: ${totalMB.toFixed(2)} / ${quotaMaxMB.toFixed(2)} MB`;
             document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
-        }
-
-        let scene, camera, renderer, composer, controls, raycaster, mouse;
-        let crystals = [];
-        let crystalCount = 12;
-        let selectedNode = null;
-        let floorMesh, carouselGroup, innerDome, outerDome;
-
-        init();
-        animate();
-
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
-            camera.position.set(0, 20, 30);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.toneMapping = THREE.ReinhardToneMapping;
-            document.body.appendChild(renderer.domElement);
-
-            const loader = new THREE.TextureLoader();
-            carouselGroup = new THREE.Group();
-            scene.add(carouselGroup);
-
-            // 1. DOME WRAPPER (Layered & Transparent)
-            const domeGeo = new THREE.SphereGeometry(60, 40, 40);
-            outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.1 
-            }));
-            scene.add(outerDome);
-
-            innerDome = new THREE.Mesh(new THREE.SphereGeometry(59, 40, 40), new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228269143.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
-            }));
-            scene.add(innerDome);
-
-            // 2. SHARP HOLOGRAPHIC FLOOR
-            const floorGeo = new THREE.CircleGeometry(13, 128);
-            const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0x999999, transparent: true, opacity: 0.7, 
-                blending: THREE.AdditiveBlending, side: THREE.DoubleSide 
-            });
-            floorMesh = new THREE.Mesh(floorGeo, floorMat);
-            floorMesh.rotation.x = -Math.PI / 2;
-            floorMesh.userData.isFloor = true;
-            scene.add(floorMesh);
-
-            // 3. BLOOM (Optimized for Floor Clarity)
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.5, 0.85);
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
-
-            // 5. CONTROLS
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI * 0.45;
-            controls.minDistance = 20;
-            controls.maxDistance = 60;
-
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
-
-            window.addEventListener('mousemove', onHover);
-            window.addEventListener('mousedown', onAction);
-            window.addEventListener('resize', onResize);
-
-            // CONNECT INPUT CLICKS TO SLICER MATRIX 
-            document.getElementById('hologram-upload').addEventListener('change', function(e) {
-                if(e.target.files.length > 0) {
-                    stagePayloadCompression(e.target.files[0]);
-                }
-            });
-        }
+        };
 
         window.triggerFileSelection = function() {
             document.getElementById('hologram-upload').click();
-        }
+        };
 
         function onHover(e) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;

@@ -42,7 +42,7 @@
             box-shadow: 0 0 100px rgba(0,255,255,0.2);
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="password"] {
             background: none; border: none; border-bottom: 2px solid var(--cyan);
             color: white; font-size: 1.6em; text-align: center; margin-bottom: 25px; outline: none; width: 100%;
         }
@@ -53,7 +53,7 @@
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
-        /* SECURE AUTHENTICATION GATEWAY OVERLAY */
+        /* SECURE MULTI-PROVIDER AUTHENTICATION SHIELD STYLING */
         #auth-gateway {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 9999; display: flex; justify-content: center; align-items: center;
@@ -103,6 +103,20 @@
             border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.06);
             box-shadow: 0 0 25px rgba(0, 255, 255, 0.2); transform: translateY(-2px);
         }
+
+        .credential-fields {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .credential-input {
+            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; 
+            border: 1px solid rgba(0,255,255,0.2)!important; color: white!important; 
+            font-size: 13px!important; text-align: left!important; padding: 12px!important; 
+            margin-bottom: 12px!important; outline: none; border-radius: 8px!important;
+        }
+        .credential-input::placeholder { color: rgba(255,255,255,0.4); }
 
         #auth-status-log {
             margin-top: 25px; font-size: 11px; color: #ff00ff; 
@@ -161,9 +175,21 @@
             <hr class="glow-divider">
             
             <div class="auth-actions">
-                <button class="auth-btn google-gate" onclick="executeSecureAuth()">
+                <button class="auth-btn google-gate" onclick="executeSecureAuth('google')">
                     <span class="btn-icon">🌐</span> Synchronize Google Identity
                 </button>
+                
+                <div style="margin: 15px 0 5px 0; font-size: 10px; color: rgba(0,255,255,0.3); letter-spacing: 2px;">OR SYSTEM PASSPHRASE KEYPAD</div>
+                
+                <div class="credential-fields">
+                    <input type="text" id="auth-email" class="credential-input" placeholder="IDENTITY_EMAIL">
+                    <input type="password" id="auth-password" class="credential-input" placeholder="PASSPHRASE_SECRET" style="margin-bottom: 20px!important;">
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" style="flex: 1; border-radius: 12px;" onclick="executeSecureAuth('email-login')">Access Vault</button>
+                        <button class="btn" style="flex: 1; border-radius: 12px; border-color: #ff00ff; color: #ff00ff;" onclick="executeSecureAuth('email-register')">Register Node</button>
+                    </div>
+                </div>
             </div>
             
             <div id="auth-status-log">CONNECTING TO SECURE SUBSURFACE CHANNELS...</div>
@@ -216,7 +242,7 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // FIREBASE PROJECT PROFILE CONFIGURATION
+        // FIREBASE MASTER CONFIGURATION INITIALIZATION - REPLACE PARAMETERS WITH ACTIVE PROJECT KEYS
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "your-app-id.firebaseapp.com",
@@ -232,31 +258,56 @@
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
 
-        // Mobile-Optimized Google Identity Tunnel Redirect
-        window.executeSecureAuth = function() {
-            const authProvider = new firebase.auth.GoogleAuthProvider();
+        // Multi-Provider Authentication Controller Engine
+        window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
-            
-            if (statusLog) {
-                statusLog.style.display = "block";
-                statusLog.innerText = "REDIRECTING TO SECURE AUTH CHANNEL...";
-            }
+            if (statusLog) statusLog.style.display = "block";
 
-            firebase.auth().signInWithRedirect(authProvider)
-                .catch((err) => {
-                    console.error("[GATEWAY MALFUNCTION] Connection refused:", err);
-                    alert(`Gateway Error: ${err.message}`);
-                });
+            if (routeType === 'google') {
+                const authProvider = new firebase.auth.GoogleAuthProvider();
+                if (statusLog) statusLog.innerText = "REDIRECTING TO SECURE GOOGLE HUB...";
+                firebase.auth().signInWithRedirect(authProvider)
+                    .catch((err) => {
+                        console.error("[AUTH_ERR] Google sync failed:", err);
+                        alert(`Gateway Error: ${err.message}`);
+                        if (statusLog) statusLog.style.display = "none";
+                    });
+                    
+            } else if (routeType === 'email-login') {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                if (!email || !password) return alert("Credentials fields cannot materialize blank.");
+                if (statusLog) statusLog.innerText = "VERIFYING ENCRYPTED ACCESS CODE...";
+
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .catch((err) => {
+                        console.error("[AUTH_ERR] Login verification failed:", err);
+                        alert(`Access Denied: ${err.message}`);
+                        if (statusLog) statusLog.style.display = "none";
+                    });
+
+            } else if (routeType === 'email-register') {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                if (!email || !password) return alert("Registration vectors require data inputs.");
+                if (statusLog) statusLog.innerText = "PROVISIONING NEW VAULT SECTOR...";
+
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .catch((err) => {
+                        console.error("[AUTH_ERR] Node generation aborted:", err);
+                        alert(`Registration Refused: ${err.message}`);
+                        if (statusLog) statusLog.style.display = "none";
+                    });
+            }
         };
 
-        // Persistent Authentication State Observer Loop
+        // Stateful Authentication Observer Loop
         firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             
             if (authenticatedUser) {
                 currentUserInstance = authenticatedUser;
                 activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
-                
                 console.log(`[OLYMPUS AUTH] Routing verified session lane to: ${activeUserVaultSegment}`);
                 
                 await initializeUserFortressInstance(authenticatedUser.uid);
@@ -277,7 +328,7 @@
             }
         });
 
-        // Database Structural Mapping Sync Router
+        // Database Integration Router Mapping Hook
         async function initializeUserFortressInstance(uid) {
             console.log(`[OLYMPUS DB] Syncing matrix profile map: ${uid}`);
             const docRef = db.collection("fortresses").doc(uid);
@@ -334,7 +385,7 @@
             carouselGroup = new THREE.Group();
             scene.add(carouselGroup);
 
-            // Layered Transparent Ambient Domes
+            // Layered Ambient Sky Domes
             const domeGeo = new THREE.SphereGeometry(60, 40, 40);
             outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
@@ -348,7 +399,7 @@
             }));
             scene.add(innerDome);
 
-            // Holographic Surface Viewport Floor Base
+            // Holographic Workspace Floor Base
             const floorGeo = new THREE.CircleGeometry(13, 128);
             const floorMat = new THREE.MeshBasicMaterial({ 
                 color: 0x999999, transparent: true, opacity: 0.7, 
@@ -359,14 +410,14 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // Post-Processing Compositing Engine
+            // Post-Processing Compositing Pass
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.5, 0.85);
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // Interface Camera Controls
+            // Orbit System Boundaries
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
@@ -381,7 +432,7 @@
             window.addEventListener('mousedown', onAction);
             window.addEventListener('resize', onResize);
 
-            // Connect Interaction Points Directly into the Quantum Slicer Engine
+            // Bind Slicer Processing Machine Pipeline to upload clicks
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 if(e.target.files.length > 0) {
                     stagePayloadCompression(e.target.files[0]);
@@ -418,6 +469,7 @@
             });
         };
 
+        // In-Browser Micro-Sharding Compression Sequence
         async function stagePayloadCompression(file) {
             if (!file || !selectedNode) return;
 
@@ -448,6 +500,7 @@
                 currentByteBound += CHUNK_SIZE;
             }
 
+            // Visual Acceleration Queue
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
 
             const compressedZipBlob = await zip.generateAsync({ 
@@ -501,6 +554,7 @@
             });
         }
 
+        // Bit-Perfect Shard Memory Restructuring Engine
         async function rematerializeNodeCore(nodeMesh) {
             const storageKey = nodeMesh.userData.fileStorageKey;
             if (!storageKey) {

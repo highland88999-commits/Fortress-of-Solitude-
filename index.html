@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Fortress of Solitude</title>
+    <title>Olympus | Personal Fortress Master</title>
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -42,7 +42,6 @@
             box-shadow: 0 0 100px rgba(0,255,255,0.2);
         }
 
-        /* INPUT FIELD STYLING WITH ISOLATED CLICK Z-INDEX */
         input[type="text"], input[type="password"] {
             background: rgba(0,0,0,0.4)!important; border: none; border-bottom: 2px solid var(--cyan);
             color: white!important; font-size: 1.6em; text-align: center; margin-bottom: 25px; 
@@ -55,12 +54,10 @@
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
-        /* HARD-LOCKED FILE INPUT TO PREVENT OVERFLOW CLICKS */
         #hologram-upload {
             position: absolute; top: -9999px; left: -9999px; visibility: hidden; pointer-events: none;
         }
 
-        /* SECURE AUTHENTICATION GATEWAY OVERLAY */
         #auth-gateway {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 9999; display: flex; justify-content: center; align-items: center;
@@ -135,7 +132,6 @@
             letter-spacing: 1px;
         }
 
-        /* OVERLAY HOLOFRAME VIEWPORT STYLING */
         #holoframe-viewer {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0, 3, 8, 0.92); z-index: 5000;
@@ -249,7 +245,6 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // FIREBASE PRODUCTION CONFIGURATION (Live Keys Applied)
         const firebaseConfig = {
             apiKey: "AIzaSyBpGY2CfT3jLRiu7HDfwpwaNUkaMC-dRi4",
             authDomain: "fortress-of-solitude-aed9e.firebaseapp.com",
@@ -263,23 +258,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ------------------------------------------------------------------
-        // EVENT ISOLATION FIX (Prevents keyboard block on mobile)
-        // ------------------------------------------------------------------
-        ['auth-email', 'auth-password', 'node-name'].forEach(id => {
-            const el = document.getElementById(id);
-            if(el) { 
-                el.addEventListener('mousedown', e => e.stopPropagation()); 
-                el.addEventListener('touchstart', e => e.stopPropagation()); 
-            }
-        });
-
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
 
-        // ------------------------------------------------------------------
-        // MULTI-PROVIDER AUTHENTICATION CONTROLLER
-        // ------------------------------------------------------------------
         window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
             if (statusLog) statusLog.style.display = "block";
@@ -322,9 +303,6 @@
             }
         };
 
-        // ------------------------------------------------------------------
-        // AUTHENTICATION OBSERVER
-        // ------------------------------------------------------------------
         firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             
@@ -351,9 +329,6 @@
             }
         });
 
-        // ------------------------------------------------------------------
-        // DATABASE MAPPING HOOK
-        // ------------------------------------------------------------------
         async function initializeUserFortressInstance(uid) {
             console.log(`[OLYMPUS DB] Syncing matrix profile map: ${uid}`);
             const docRef = db.collection("fortresses").doc(uid);
@@ -386,9 +361,6 @@
             }
         }
 
-        // ------------------------------------------------------------------
-        // THREE.JS SCENE SETUP & ANIMATION LOOP
-        // ------------------------------------------------------------------
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [];
         let crystalCount = 12;
@@ -413,7 +385,6 @@
             carouselGroup = new THREE.Group();
             scene.add(carouselGroup);
 
-            // Domes
             const domeGeo = new THREE.SphereGeometry(60, 40, 40);
             outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
                 map: loader.load('assets/1776228660207.png'), 
@@ -427,7 +398,6 @@
             }));
             scene.add(innerDome);
 
-            // Floor
             const floorGeo = new THREE.CircleGeometry(13, 128);
             const floorMat = new THREE.MeshBasicMaterial({ 
                 color: 0x999999, transparent: true, opacity: 0.7, 
@@ -438,14 +408,12 @@
             floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
-            // Bloom
             const renderScene = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.5, 0.85);
             composer = new EffectComposer(renderer);
             composer.addPass(renderScene);
             composer.addPass(bloomPass);
 
-            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
@@ -458,9 +426,9 @@
 
             window.addEventListener('mousemove', onHover);
             window.addEventListener('mousedown', onAction);
+            window.addEventListener('touchstart', onAction, {passive: false});
             window.addEventListener('resize', onResize);
 
-            // Slicer Bind
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 if (!selectedNode && e.target.files.length > 0) {
                     const file = e.target.files[0];
@@ -481,25 +449,6 @@
             });
         }
 
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            carouselGroup.rotation.y += 0.0015;
-            innerDome.rotation.y -= 0.0005;
-            outerDome.rotation.y += 0.0002;
-            composer.render();
-        }
-
-        // ------------------------------------------------------------------
-        // INTERACTION & CRYSTAL LOGIC
-        // ------------------------------------------------------------------
         window.rebuildCrystalsFromSchema = function(schema) {
             crystals.forEach(c => carouselGroup.remove(c));
             crystals = [];
@@ -522,9 +471,118 @@
             });
         };
 
-        window.triggerFileSelection = function() {
-            document.getElementById('hologram-upload').click();
+        async function stagePayloadCompression(file) {
+            if (!file || !selectedNode) return;
+            console.log(`[OLYMPUS SLICER] Executing binary sharding protocol on: ${file.name}`);
+            const CHUNK_SIZE = 64 * 1024; 
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const zip = new JSZip();
+
+            const manifest = {
+                originName: file.name, mimeType: file.type, rawSizeBytes: file.size, 
+                totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id
+            };
+            zip.file("manifest.json", JSON.stringify(manifest));
+
+            let currentByteBound = 0;
+            for (let i = 0; i < totalChunks; i++) {
+                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
+                const arrayBufferShard = await fileSlice.arrayBuffer();
+                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, arrayBufferShard, { binary: true });
+                currentByteBound += CHUNK_SIZE;
+            }
+
+            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
+            const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+            dispatchToVaultBypass(compressedZipBlob, manifest);
+        }
+
+        async function dispatchToVaultBypass(zipBlob, manifest) {
+            console.log("[OLYMPUS VAULT] Resolving presigned transaction token allocation parameters...");
+            try {
+                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
+                const response = await getUploadSignature({ nodeId: manifest.nodeId });
+                const { uploadUrl, fileStorageKey } = response.data;
+                const transferResult = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/zip" }, body: zipBlob });
+                if (!transferResult.ok) throw new Error("Vault boundary dropped file array stream.");
+                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
+            } catch (err) {
+                console.error("[VAULT_CRITICAL] Transmission line collapsed:", err);
+                alert("Vault transaction aborted. Connection baseline lost.");
+            }
+        }
+
+        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
+            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
+                let matrix = doc.data().crystalMatrix;
+                let idx = selectedNode.userData.index;
+                matrix[idx].fileStorageKey = storageKey;
+                matrix[idx].name = filename;
+                matrix[idx].rawSize = bytesize;
+                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
+                    window.rebuildCrystalsFromSchema(matrix);
+                    window.calculateHUDQuota(matrix);
+                    saveAndClose();
+                });
+            });
+        }
+
+        async function rematerializeNodeCore(nodeMesh) {
+            const storageKey = nodeMesh.userData.fileStorageKey;
+            console.log("[OLYMPUS RECEIVER] Initializing stream capture reassembly loops...");
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'block';
+            tooltip.innerText = "DECRYPTING MATRIX...";
+
+            try {
+                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
+                const response = await getDownloadSignature({ fileStorageKey: storageKey });
+                const cloudStream = await fetch(response.data.downloadUrl);
+                const blobData = await cloudStream.blob();
+                const unzipped = await JSZip.loadAsync(blobData);
+                const manifestRaw = await unzipped.file("manifest.json").async("string");
+                const manifest = JSON.parse(manifestRaw);
+
+                let compiledBuffers = [];
+                for (let i = 0; i < manifest.totalFragments; i++) {
+                    const key = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
+                    compiledBuffers.push(await unzipped.file(key).async("arraybuffer"));
+                }
+                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
+                tooltip.style.display = 'none';
+                renderHoloframeContent(URL.createObjectURL(reconstructedBlob), manifest);
+            } catch (err) {
+                console.error("Reassembly engine failed validation metrics:", err);
+                tooltip.innerText = "SIGNAL LOSS ERROR";
+            }
+        }
+
+        function renderHoloframeContent(url, meta) {
+            const viewer = document.getElementById('holoframe-viewer');
+            const target = document.getElementById('holoframe-content');
+            target.innerHTML = ""; 
+            viewer.style.display = "flex";
+
+            if (meta.mimeType.startsWith('image/')) {
+                const img = document.createElement('img'); img.src = url; target.appendChild(img);
+            } else if (meta.mimeType.startsWith('video/')) {
+                const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
+            } else {
+                const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
+            }
+        }
+
+        window.calculateHUDQuota = function(matrix) {
+            let totalBytes = 0;
+            matrix.forEach(node => totalBytes += (node.rawSize || 0));
+            const totalMB = totalBytes / (1024 * 1024);
+            const quotaMaxMB = 2000.00;
+            const percentage = Math.min((totalMB / quotaMaxMB) * 100, 100);
+            document.getElementById('hud-capacity-text').innerText = `VAULT LOAD: ${totalMB.toFixed(2)} / ${quotaMaxMB.toFixed(2)} MB`;
+            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
         };
+
+        window.triggerFileSelection = function() { document.getElementById('hologram-upload').click(); };
 
         function onHover(e) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -545,7 +603,19 @@
             }
         }
 
-        function onAction() {
+        function onAction(e) {
+            // THE NUCLEAR FIX: Ignore any click that doesn't physically hit the 3D canvas rendering engine
+            if (e.target.tagName !== 'CANVAS') return;
+
+            // Handle touch events mapping correctly on mobile
+            if (e.touches && e.touches.length > 0) {
+                mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+            } else {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            }
+
             raycaster.setFromCamera(mouse, camera);
             const hits = raycaster.intersectObjects([...crystals, floorMesh]);
 
@@ -571,8 +641,9 @@
                     document.getElementById('popup').style.display = 'block';
                     document.getElementById('node-name').value = selectedNode.userData.name;
                     document.getElementById('color-picker').value = selectedNode.userData.color;
-                    document.getElementById('color-picker').oninput = (e) => {
-                        const col = e.target.value;
+
+                    document.getElementById('color-picker').oninput = (ev) => {
+                        const col = ev.target.value;
                         selectedNode.material.emissive.set(col);
                         selectedNode.material.color.set(col);
                         selectedNode.userData.color = col;
@@ -608,6 +679,7 @@
                 const angle = (i / crystalCount) * Math.PI * 2;
                 gsap.to(c.position, { x: Math.cos(angle)*11, z: Math.sin(angle)*11, duration: 1 });
             });
+            
             const angle = ((crystalCount - 1) / crystalCount) * Math.PI * 2;
             const radius = 11;
             const height = 4 + Math.random() * 1.5;
@@ -616,6 +688,7 @@
             const mat = new THREE.MeshStandardMaterial({ map: tex, emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 });
             const node = new THREE.Mesh(geo, mat);
             node.position.set(Math.cos(angle)*radius, height/2, Math.sin(angle)*radius);
+            
             const newNodeData = {
                 id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 name: `NODE_${crystalCount.toString().padStart(2,'0')}`,
@@ -624,116 +697,29 @@
             node.userData = newNodeData;
             carouselGroup.add(node);
             crystals.push(node);
+
             if (currentUserInstance) {
                 db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: firebase.firestore.FieldValue.arrayUnion(newNodeData) });
             }
         }
 
-        // ------------------------------------------------------------------
-        // SHARDING & REMATERIALIZATION LOGIC
-        // ------------------------------------------------------------------
-        async function stagePayloadCompression(file) {
-            if (!file || !selectedNode) return;
-            console.log(`[OLYMPUS SLICER] Executing binary sharding protocol on: ${file.name}`);
-            const CHUNK_SIZE = 64 * 1024; 
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            const zip = new JSZip();
-            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id };
-            zip.file("manifest.json", JSON.stringify(manifest));
+        window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; }
 
-            let currentByteBound = 0;
-            for (let i = 0; i < totalChunks; i++) {
-                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
-                const arrayBufferShard = await fileSlice.arrayBuffer();
-                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, arrayBufferShard, { binary: true });
-                currentByteBound += CHUNK_SIZE;
-            }
-
-            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
-            const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
-            dispatchToVaultBypass(compressedZipBlob, manifest);
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        async function dispatchToVaultBypass(zipBlob, manifest) {
-            try {
-                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
-                const response = await getUploadSignature({ nodeId: manifest.nodeId });
-                const { uploadUrl, fileStorageKey } = response.data;
-                const transferResult = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/zip" }, body: zipBlob });
-                if (!transferResult.ok) throw new Error("Vault boundary dropped file array stream.");
-                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
-            } catch (err) {
-                console.error("[VAULT_CRITICAL] Transmission line collapsed:", err);
-                alert("Vault transaction aborted.");
-            }
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            carouselGroup.rotation.y += 0.0015;
+            innerDome.rotation.y -= 0.0005;
+            outerDome.rotation.y += 0.0002;
+            composer.render();
         }
-
-        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
-            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
-                let matrix = doc.data().crystalMatrix;
-                let idx = selectedNode.userData.index;
-                matrix[idx].fileStorageKey = storageKey;
-                matrix[idx].name = filename;
-                matrix[idx].rawSize = bytesize;
-                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                    window.rebuildCrystalsFromSchema(matrix);
-                    window.calculateHUDQuota(matrix);
-                    saveAndClose();
-                });
-            });
-        }
-
-        async function rematerializeNodeCore(nodeMesh) {
-            const storageKey = nodeMesh.userData.fileStorageKey;
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.display = 'block';
-            tooltip.innerText = "DECRYPTING MATRIX...";
-
-            try {
-                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
-                const response = await getDownloadSignature({ fileStorageKey: storageKey });
-                const cloudStream = await fetch(response.data.downloadUrl);
-                const blobData = await cloudStream.blob();
-                const unzipped = await JSZip.loadAsync(blobData);
-                const manifest = JSON.parse(await unzipped.file("manifest.json").async("string"));
-                
-                let compiledBuffers = [];
-                for (let i = 0; i < manifest.totalFragments; i++) {
-                    compiledBuffers.push(await unzipped.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`).async("arraybuffer"));
-                }
-                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
-                tooltip.style.display = 'none';
-                renderHoloframeContent(URL.createObjectURL(reconstructedBlob), manifest);
-            } catch (err) {
-                console.error("Reassembly engine failed:", err);
-                tooltip.innerText = "SIGNAL LOSS ERROR";
-            }
-        }
-
-        function renderHoloframeContent(url, meta) {
-            const viewer = document.getElementById('holoframe-viewer');
-            const target = document.getElementById('holoframe-content');
-            target.innerHTML = ""; 
-            viewer.style.display = "flex";
-            if (meta.mimeType.startsWith('image/')) {
-                const img = document.createElement('img'); img.src = url; target.appendChild(img);
-            } else if (meta.mimeType.startsWith('video/')) {
-                const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
-            } else {
-                const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
-            }
-        }
-
-        window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; };
-
-        window.calculateHUDQuota = function(matrix) {
-            let totalBytes = 0;
-            matrix.forEach(node => totalBytes += (node.rawSize || 0));
-            const percentage = Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100);
-            document.getElementById('hud-capacity-text').innerText = `VAULT LOAD: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
-            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
-        };
-
     </script>
 </body>
 </html>

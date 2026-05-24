@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Personal Fortress Master</title>
+    <title>Olympus | Personal Fortress</title>
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -16,8 +16,21 @@
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; justify-content: flex-end;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
+
+        #top-bar {
+            pointer-events: auto; width: 92%; max-width: 700px; margin: 25px auto 0 auto;
+        }
+
+        #search-input {
+            width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid var(--cyan); color: white; padding: 12px 20px; 
+            border-radius: 30px; font-size: 14px; outline: none; 
+            backdrop-filter: blur(10px); box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            text-align: center; font-family: inherit; letter-spacing: 1px;
+        }
+        #search-input::placeholder { color: rgba(0, 255, 255, 0.5); text-transform: uppercase; font-size: 12px;}
 
         #bottom-bar {
             pointer-events: auto; width: 92%; max-width: 700px; margin: 0 auto 25px auto;
@@ -25,12 +38,14 @@
             border: 1px solid rgba(0,255,255,0.4); border-radius: 40px;
             padding: 12px 25px; display: flex; align-items: center; justify-content: space-between;
             backdrop-filter: blur(25px); box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            gap: 10px;
         }
 
         .btn {
             background: rgba(0,0,0,0.6); border: 1px solid var(--cyan); color: var(--cyan);
-            padding: 12px 22px; border-radius: 30px; cursor: pointer; font-size: 10px;
+            padding: 12px 18px; border-radius: 30px; cursor: pointer; font-size: 10px;
             text-transform: uppercase; font-weight: 800; letter-spacing: 1px; transition: 0.3s;
+            white-space: nowrap;
         }
         .btn:hover { box-shadow: 0 0 20px var(--cyan); background: rgba(0,255,255,0.2); }
 
@@ -40,11 +55,12 @@
             padding: 35px; border-radius: 25px; text-align: center;
             display: none; pointer-events: auto; z-index: 50;
             box-shadow: 0 0 100px rgba(0,255,255,0.2);
+            width: 80%; max-width: 320px;
         }
 
         input[type="text"], input[type="password"] {
             background: rgba(0,0,0,0.4)!important; border: none; border-bottom: 2px solid var(--cyan);
-            color: white!important; font-size: 1.6em; text-align: center; margin-bottom: 25px; 
+            color: white!important; font-size: 1.2em; text-align: center; margin-bottom: 25px; 
             outline: none; width: 100%; z-index: 20000; position: relative;
         }
 
@@ -71,47 +87,35 @@
         }
 
         .terminal-card {
-            position: relative; width: 90%; max-width: 440px;
+            position: relative; width: 90%; max-width: 400px;
             background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
-            border-radius: 24px; padding: 45px 35px; text-align: center;
+            border-radius: 24px; padding: 35px 25px; text-align: center;
             backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08);
             z-index: 10001;
         }
 
         .neon-brand {
-            color: #fff; font-size: 2.4em; font-weight: 800; letter-spacing: 5px;
-            margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+            color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: 4px;
+            margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan);
         }
 
         .matrix-subtitle {
             color: var(--neon-cyan); font-size: 10px; letter-spacing: 2px;
-            opacity: 0.8; margin-bottom: 30px; line-height: 1.6;
+            opacity: 0.8; margin-bottom: 25px; line-height: 1.6;
         }
 
-        .glow-divider {
-            border: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-            margin-bottom: 35px;
-        }
-
-        .auth-actions { display: flex; flex-direction: column; gap: 16px; }
+        .auth-actions { display: flex; flex-direction: column; gap: 12px; }
 
         .auth-btn {
             background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #fff; padding: 16px 24px; border-radius: 12px; font-size: 12px;
-            font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 12px;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
-        .auth-btn:hover {
-            border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.06);
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.2); transform: translateY(-2px);
-        }
+        .auth-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.1); }
 
-        .credential-fields {
-            display: flex; flex-direction: column; width: 100%;
-        }
+        .credential-fields { display: flex; flex-direction: column; width: 100%; }
 
         .credential-input {
             width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; 
@@ -120,16 +124,11 @@
             margin-bottom: 12px!important; outline: none; border-radius: 8px!important;
             z-index: 20000; position: relative;
         }
-        .credential-input::placeholder { color: rgba(255,255,255,0.4); }
+        .credential-input::placeholder { color: rgba(255,255,255,0.4); text-transform: none; }
 
         #auth-status-log {
-            margin-top: 25px; font-size: 11px; color: #ff00ff; 
-            letter-spacing: 1.5px; text-transform: uppercase; display: none;
-        }
-
-        .footer-legal {
-            margin-top: 45px; font-size: 9px; color: rgba(255, 255, 255, 0.25);
-            letter-spacing: 1px;
+            margin-top: 20px; font-size: 11px; color: #ff00ff; 
+            letter-spacing: 1px; text-transform: uppercase; display: none;
         }
 
         #holoframe-viewer {
@@ -139,19 +138,19 @@
             backdrop-filter: blur(25px);
         }
         #holoframe-container {
-            width: 85vw; height: 80vh; max-width: 1000px;
-            background: rgba(0, 20, 35, 0.4); border: 1px solid rgba(0, 255, 255, 0.4);
-            border-radius: 20px; display: flex; flex-direction: column;
+            width: 90vw; height: 85vh; max-width: 1000px;
+            background: rgba(0, 20, 35, 0.6); border: 1px solid rgba(0, 255, 255, 0.4);
+            border-radius: 15px; display: flex; flex-direction: column;
             overflow: hidden; box-shadow: 0 0 100px rgba(0,255,255,0.15);
         }
         #holoframe-header {
-            padding: 15px 25px; border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.2);
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0, 10, 20, 0.6);
+            background: rgba(0, 10, 20, 0.8);
         }
-        #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 3px; text-shadow: 0 0 10px #0ff; }
-        #holoframe-content { flex: 1; padding: 30px; display: flex; justify-content: center; align-items: center; overflow: auto; }
-        #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 30px rgba(0,255,255,0.3); }
+        #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
+        #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow: auto; }
+        #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
         #holoframe-content iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
     </style>
 </head>
@@ -163,7 +162,7 @@
     <div id="holoframe-viewer" onclick="closeHoloframe()">
         <div id="holoframe-container" onclick="event.stopPropagation()">
             <div id="holoframe-header">
-                <span id="holo-title">REMATERIALIZED KNOWLEDGE FRAGMENT</span>
+                <span id="holo-title">FILE VIEWER</span>
                 <button class="btn" style="padding: 5px 10px;" onclick="closeHoloframe()">✕</button>
             </div>
             <div id="holoframe-content"></div>
@@ -173,49 +172,55 @@
     <div id="auth-gateway">
         <div id="starfield-matrix-bg"></div>
         <div class="terminal-card">
-            <h1 class="neon-brand">OLYMPUS CORE</h1>
-            <p class="matrix-subtitle">MANDATORY LINK REQUIRED TO INITIALIZE VAULT ENCLOSURE</p>
-            <hr class="glow-divider">
+            <h1 class="neon-brand">OLYMPUS</h1>
+            <p class="matrix-subtitle">PLEASE LOG IN TO ACCESS YOUR VAULT</p>
             
             <div class="auth-actions">
-                <button class="auth-btn google-gate" onclick="executeSecureAuth('google')">
-                    <span class="btn-icon">🌐</span> Synchronize Google Identity
+                <button class="auth-btn" onclick="executeSecureAuth('google')">
+                    🌐 Continue with Google
                 </button>
                 
-                <div style="margin: 15px 0 5px 0; font-size: 10px; color: rgba(0,255,255,0.3); letter-spacing: 2px;">OR SYSTEM PASSPHRASE KEYPAD</div>
+                <div style="margin: 10px 0; font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px;">OR USE EMAIL</div>
                 
                 <div class="credential-fields">
-                    <input type="text" id="auth-email" class="credential-input" placeholder="IDENTITY_EMAIL">
-                    <input type="password" id="auth-password" class="credential-input" placeholder="PASSPHRASE_SECRET" style="margin-bottom: 20px!important;">
+                    <input type="text" id="auth-email" class="credential-input" placeholder="Email Address">
+                    <input type="password" id="auth-password" class="credential-input" placeholder="Password" style="margin-bottom: 20px!important;">
                     
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn" style="flex: 1; border-radius: 12px;" onclick="executeSecureAuth('email-login')">Access Vault</button>
-                        <button class="btn" style="flex: 1; border-radius: 12px; border-color: #ff00ff; color: #ff00ff;" onclick="executeSecureAuth('email-register')">Register Node</button>
+                        <button class="btn" style="flex: 1; border-radius: 12px;" onclick="executeSecureAuth('email-login')">Log In</button>
+                        <button class="btn" style="flex: 1; border-radius: 12px; border-color: #ff00ff; color: #ff00ff;" onclick="executeSecureAuth('email-register')">Register</button>
                     </div>
                 </div>
             </div>
             
-            <div id="auth-status-log">CONNECTING TO SECURE SUBSURFACE CHANNELS...</div>
-            <div class="footer-legal">OLYMPUS LLC // DATA FRAGMENTATION HUB © 2026</div>
+            <div id="auth-status-log">CONNECTING...</div>
         </div>
     </div>
 
     <div id="ui-layer">
+        <div id="top-bar">
+            <input type="text" id="search-input" placeholder="Search your vault...">
+        </div>
+
         <div id="popup">
-            <input type="text" id="node-name" value="CRYSTAL_NODE">
-            <button class="btn" style="width:100%; margin-bottom:20px;" onclick="triggerFileSelection()">Upload to Olympus</button>
-            <span style="font-size:10px; letter-spacing:3px; color:var(--cyan);">ENERGY SPECTRUM</span>
+            <input type="text" id="node-name" value="CRYSTAL_NODE" style="font-size: 1.2em;">
+            <button class="btn" style="width:100%; margin-bottom:20px;" onclick="triggerCrystalUpload()">Upload File to Crystal</button>
+            <span style="font-size:10px; letter-spacing:3px; color:var(--cyan);">CRYSTAL COLOR</span>
             <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:50px; border:none; background:none; cursor:pointer; margin-top:10px;">
             <br><br>
-            <button class="btn" onclick="saveAndClose()" style="width:100%;">Sync Matrix</button>
+            <button class="btn" onclick="saveAndClose()" style="width:100%;">Save Changes</button>
         </div>
 
         <div id="bottom-bar">
-            <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
-            <div style="text-align:center; flex:1; padding: 0 20px;">
-                <div id="hud-capacity-text" style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">VAULT LOAD: 0.00 / 2000.00 MB</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
+                <button class="btn" onclick="triggerFloorUpload()" style="border-color: #aaa; color: #aaa;">Set Floor Image</button>
+            </div>
+            
+            <div style="text-align:center; flex:1; padding: 0 15px;">
+                <div id="hud-capacity-text" style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">STORAGE: 0.00 / 2000.00 MB</div>
                 <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px;">
-                    <div id="hud-capacity-bar" style="width:0%; height:100%; background:var(--cyan); box-shadow:0 0 12px var(--cyan); transition: width 0.5s;"></div>
+                    <div id="hud-capacity-bar" style="width:0%; height:100%; background:var(--cyan); transition: width 0.5s;"></div>
                 </div>
             </div>
             <button class="btn" style="border-color:#ff00ff; color:#ff00ff;">Upgrade</button>
@@ -258,8 +263,18 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Prevent click-through to scene for all UI inputs
+        ['auth-email', 'auth-password', 'node-name', 'search-input'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) { 
+                el.addEventListener('mousedown', e => e.stopPropagation()); 
+                el.addEventListener('touchstart', e => e.stopPropagation()); 
+            }
+        });
+
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
+        let uploadTarget = null; // Tracks if we are uploading to 'floor' or 'crystal'
 
         window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
@@ -267,60 +282,57 @@
 
             if (routeType === 'google') {
                 const authProvider = new firebase.auth.GoogleAuthProvider();
-                if (statusLog) statusLog.innerText = "REDIRECTING TO SECURE GOOGLE HUB...";
+                if (statusLog) statusLog.innerText = "Redirecting to Google...";
                 firebase.auth().signInWithRedirect(authProvider)
                     .catch((err) => {
-                        console.error("[AUTH_ERR] Google sync failed:", err);
-                        alert(`Gateway Error: ${err.message}`);
+                        alert(`Error: ${err.message}`);
                         if (statusLog) statusLog.style.display = "none";
                     });
-                    
-            } else if (routeType === 'email-login') {
+            } else {
                 const email = document.getElementById('auth-email').value;
                 const password = document.getElementById('auth-password').value;
-                if (!email || !password) return alert("Credentials fields cannot materialize blank.");
-                if (statusLog) statusLog.innerText = "VERIFYING ENCRYPTED ACCESS CODE...";
+                
+                if (!email || !password) {
+                    if (statusLog) statusLog.style.display = "none";
+                    return alert("Please enter both an email and password.");
+                }
 
-                firebase.auth().signInWithEmailAndPassword(email, password)
-                    .catch((err) => {
-                        console.error("[AUTH_ERR] Login verification failed:", err);
-                        alert(`Access Denied: ${err.message}`);
-                        if (statusLog) statusLog.style.display = "none";
-                    });
+                if (routeType === 'email-login') {
+                    if (statusLog) statusLog.innerText = "Logging in...";
+                    firebase.auth().signInWithEmailAndPassword(email, password)
+                        .catch((err) => {
+                            let msg = err.message;
+                            if (err.code === 'auth/invalid-credential') msg = "Invalid email or password.";
+                            alert(msg);
+                            if (statusLog) statusLog.style.display = "none";
+                        });
 
-            } else if (routeType === 'email-register') {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                if (!email || !password) return alert("Registration vectors require data inputs.");
-                if (statusLog) statusLog.innerText = "PROVISIONING NEW VAULT SECTOR...";
-
-                firebase.auth().createUserWithEmailAndPassword(email, password)
-                    .catch((err) => {
-                        console.error("[AUTH_ERR] Node generation aborted:", err);
-                        alert(`Registration Refused: ${err.message}`);
-                        if (statusLog) statusLog.style.display = "none";
-                    });
+                } else if (routeType === 'email-register') {
+                    if (statusLog) statusLog.innerText = "Creating your account...";
+                    firebase.auth().createUserWithEmailAndPassword(email, password)
+                        .catch((err) => {
+                            alert(`Error: ${err.message}`);
+                            if (statusLog) statusLog.style.display = "none";
+                        });
+                }
             }
         };
 
+        // When a user successfully logs in, this triggers immediately.
         firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             
             if (authenticatedUser) {
                 currentUserInstance = authenticatedUser;
                 activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
-                console.log(`[OLYMPUS AUTH] Routing verified session lane to: ${activeUserVaultSegment}`);
                 
-                await initializeUserFortressInstance(authenticatedUser.uid);
-
+                // Hide the login screen gracefully
                 gsap.to(shieldOverlay, { 
-                    opacity: 0, 
-                    duration: 0.7, 
-                    ease: "power2.out",
-                    onComplete: () => {
-                        shieldOverlay.style.display = 'none';
-                    }
+                    opacity: 0, duration: 0.5, ease: "power2.out",
+                    onComplete: () => { shieldOverlay.style.display = 'none'; }
                 });
+
+                await initializeUserFortressInstance(authenticatedUser.uid);
             } else {
                 currentUserInstance = null;
                 activeUserVaultSegment = "";
@@ -330,9 +342,7 @@
         });
 
         async function initializeUserFortressInstance(uid) {
-            console.log(`[OLYMPUS DB] Syncing matrix profile map: ${uid}`);
             const docRef = db.collection("fortresses").doc(uid);
-            
             try {
                 const doc = await docRef.get();
                 if (doc.exists) {
@@ -340,12 +350,11 @@
                     window.rebuildCrystalsFromSchema(data.crystalMatrix || []);
                     window.calculateHUDQuota(data.crystalMatrix || []);
                 } else {
-                    console.log("[OLYMPUS MAP] Generating core baseline schema layout grid...");
                     const starterMatrix = [];
                     for (let i = 0; i < 12; i++) {
                         starterMatrix.push({
                             id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                            name: `UNALLOCATED_CORE_${(i+1).toString().padStart(2, '0')}`,
+                            name: `Crystal ${i+1}`,
                             color: "#00ffff",
                             height: 4 + Math.random() * 1.5,
                             fileStorageKey: "", 
@@ -357,7 +366,7 @@
                     window.calculateHUDQuota(starterMatrix);
                 }
             } catch (err) {
-                console.error("[MAP_CRITICAL] Firestore synchronization failed:", err);
+                console.error("Database sync failed:", err);
             }
         }
 
@@ -373,7 +382,7 @@
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
-            camera.position.set(0, 20, 30);
+            camera.position.set(0, 15, 35); // Adjusted angle to ensure crystals are visible
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -387,25 +396,22 @@
 
             const domeGeo = new THREE.SphereGeometry(60, 40, 40);
             outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228660207.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.1 
+                map: loader.load('assets/1776228660207.png'), side: THREE.BackSide, transparent: true, opacity: 0.1 
             }));
             scene.add(outerDome);
 
             innerDome = new THREE.Mesh(new THREE.SphereGeometry(59, 40, 40), new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228269143.png'), 
-                side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
+                map: loader.load('assets/1776228269143.png'), side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
             }));
             scene.add(innerDome);
 
-            const floorGeo = new THREE.CircleGeometry(13, 128);
+            const floorGeo = new THREE.CircleGeometry(15, 128);
             const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0x999999, transparent: true, opacity: 0.7, 
+                color: 0x555555, transparent: true, opacity: 0.5, 
                 blending: THREE.AdditiveBlending, side: THREE.DoubleSide 
             });
             floorMesh = new THREE.Mesh(floorGeo, floorMat);
             floorMesh.rotation.x = -Math.PI / 2;
-            floorMesh.userData.isFloor = true;
             scene.add(floorMesh);
 
             const renderScene = new RenderPass(scene, camera);
@@ -417,9 +423,9 @@
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI * 0.45;
-            controls.minDistance = 20;
-            controls.maxDistance = 60;
+            controls.maxPolarAngle = Math.PI * 0.48;
+            controls.minDistance = 10;
+            controls.maxDistance = 50;
 
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
@@ -429,8 +435,25 @@
             window.addEventListener('touchstart', onAction, {passive: false});
             window.addEventListener('resize', onResize);
 
+            // SEARCH BAR LOGIC
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                crystals.forEach(c => {
+                    if (c.userData.name.toLowerCase().includes(term)) {
+                        c.material.opacity = 1;
+                        c.material.transparent = false;
+                    } else {
+                        c.material.opacity = 0.15;
+                        c.material.transparent = true;
+                    }
+                });
+            });
+
+            // FILE UPLOAD ROUTER
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
-                if (!selectedNode && e.target.files.length > 0) {
+                if (e.target.files.length === 0) return;
+                
+                if (uploadTarget === 'floor') {
                     const file = e.target.files[0];
                     const url = URL.createObjectURL(file);
                     if (file.type.startsWith('video')) {
@@ -443,9 +466,13 @@
                     floorMesh.material.color.setHex(0xffffff);
                     floorMesh.material.opacity = 0.9;
                     floorMesh.material.needsUpdate = true;
-                } else if (selectedNode && e.target.files.length > 0) {
+                } else if (uploadTarget === 'crystal' && selectedNode) {
                     stagePayloadCompression(e.target.files[0]);
                 }
+                
+                // Reset target
+                uploadTarget = null;
+                e.target.value = ""; // clear input
             });
         }
 
@@ -471,123 +498,22 @@
             });
         };
 
-        async function stagePayloadCompression(file) {
-            if (!file || !selectedNode) return;
-            console.log(`[OLYMPUS SLICER] Executing binary sharding protocol on: ${file.name}`);
-            const CHUNK_SIZE = 64 * 1024; 
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-            const zip = new JSZip();
-
-            const manifest = {
-                originName: file.name, mimeType: file.type, rawSizeBytes: file.size, 
-                totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id
-            };
-            zip.file("manifest.json", JSON.stringify(manifest));
-
-            let currentByteBound = 0;
-            for (let i = 0; i < totalChunks; i++) {
-                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
-                const arrayBufferShard = await fileSlice.arrayBuffer();
-                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, arrayBufferShard, { binary: true });
-                currentByteBound += CHUNK_SIZE;
-            }
-
-            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
-            const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
-            dispatchToVaultBypass(compressedZipBlob, manifest);
-        }
-
-        async function dispatchToVaultBypass(zipBlob, manifest) {
-            console.log("[OLYMPUS VAULT] Resolving presigned transaction token allocation parameters...");
-            try {
-                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
-                const response = await getUploadSignature({ nodeId: manifest.nodeId });
-                const { uploadUrl, fileStorageKey } = response.data;
-                const transferResult = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/zip" }, body: zipBlob });
-                if (!transferResult.ok) throw new Error("Vault boundary dropped file array stream.");
-                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
-            } catch (err) {
-                console.error("[VAULT_CRITICAL] Transmission line collapsed:", err);
-                alert("Vault transaction aborted. Connection baseline lost.");
-            }
-        }
-
-        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
-            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
-                let matrix = doc.data().crystalMatrix;
-                let idx = selectedNode.userData.index;
-                matrix[idx].fileStorageKey = storageKey;
-                matrix[idx].name = filename;
-                matrix[idx].rawSize = bytesize;
-                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                    window.rebuildCrystalsFromSchema(matrix);
-                    window.calculateHUDQuota(matrix);
-                    saveAndClose();
-                });
-            });
-        }
-
-        async function rematerializeNodeCore(nodeMesh) {
-            const storageKey = nodeMesh.userData.fileStorageKey;
-            console.log("[OLYMPUS RECEIVER] Initializing stream capture reassembly loops...");
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.display = 'block';
-            tooltip.innerText = "DECRYPTING MATRIX...";
-
-            try {
-                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
-                const response = await getDownloadSignature({ fileStorageKey: storageKey });
-                const cloudStream = await fetch(response.data.downloadUrl);
-                const blobData = await cloudStream.blob();
-                const unzipped = await JSZip.loadAsync(blobData);
-                const manifestRaw = await unzipped.file("manifest.json").async("string");
-                const manifest = JSON.parse(manifestRaw);
-
-                let compiledBuffers = [];
-                for (let i = 0; i < manifest.totalFragments; i++) {
-                    const key = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
-                    compiledBuffers.push(await unzipped.file(key).async("arraybuffer"));
-                }
-                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
-                tooltip.style.display = 'none';
-                renderHoloframeContent(URL.createObjectURL(reconstructedBlob), manifest);
-            } catch (err) {
-                console.error("Reassembly engine failed validation metrics:", err);
-                tooltip.innerText = "SIGNAL LOSS ERROR";
-            }
-        }
-
-        function renderHoloframeContent(url, meta) {
-            const viewer = document.getElementById('holoframe-viewer');
-            const target = document.getElementById('holoframe-content');
-            target.innerHTML = ""; 
-            viewer.style.display = "flex";
-
-            if (meta.mimeType.startsWith('image/')) {
-                const img = document.createElement('img'); img.src = url; target.appendChild(img);
-            } else if (meta.mimeType.startsWith('video/')) {
-                const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
-            } else {
-                const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
-            }
-        }
-
-        window.calculateHUDQuota = function(matrix) {
-            let totalBytes = 0;
-            matrix.forEach(node => totalBytes += (node.rawSize || 0));
-            const totalMB = totalBytes / (1024 * 1024);
-            const quotaMaxMB = 2000.00;
-            const percentage = Math.min((totalMB / quotaMaxMB) * 100, 100);
-            document.getElementById('hud-capacity-text').innerText = `VAULT LOAD: ${totalMB.toFixed(2)} / ${quotaMaxMB.toFixed(2)} MB`;
-            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
+        window.triggerFloorUpload = function() {
+            uploadTarget = 'floor';
+            document.getElementById('hologram-upload').click();
         };
 
-        window.triggerFileSelection = function() { document.getElementById('hologram-upload').click(); };
+        window.triggerCrystalUpload = function() {
+            uploadTarget = 'crystal';
+            document.getElementById('hologram-upload').click();
+        };
 
         function onHover(e) {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
+            
+            // Only intersect crystals, NEVER the floor
             const hits = raycaster.intersectObjects(crystals);
             const tooltip = document.getElementById('tooltip');
             
@@ -598,16 +524,15 @@
                 tooltip.innerText = hits[0].object.userData.name;
                 document.body.style.cursor = 'pointer';
             } else {
-                if(tooltip.innerText !== "DECRYPTING MATRIX...") tooltip.style.display = 'none';
+                if(tooltip.innerText !== "DOWNLOADING...") tooltip.style.display = 'none';
                 document.body.style.cursor = 'default';
             }
         }
 
         function onAction(e) {
-            // THE NUCLEAR FIX: Ignore any click that doesn't physically hit the 3D canvas rendering engine
+            // Ignore UI clicks entirely
             if (e.target.tagName !== 'CANVAS') return;
 
-            // Handle touch events mapping correctly on mobile
             if (e.touches && e.touches.length > 0) {
                 mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
@@ -617,26 +542,18 @@
             }
 
             raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects([...crystals, floorMesh]);
+            
+            // ONLY check against crystals. The floor is no longer clickable.
+            const hits = raycaster.intersectObjects(crystals);
 
             if (hits.length > 0) {
                 const obj = hits[0].object;
-
-                if (obj.userData.isFloor) {
-                    console.log("[OLYMPUS VIEWPORT] Floor intersection confirmed.");
-                    selectedNode = null; 
-                    document.getElementById('hologram-upload').click();
-                    return;
-                }
-
                 const storageKey = obj.userData.fileStorageKey;
                 selectedNode = obj;
 
                 if (storageKey) {
-                    console.log(`[OLYMPUS RECEIVER] Core payload detected: ${obj.userData.name}`);
                     rematerializeNodeCore(obj);
                 } else {
-                    console.log(`[OLYMPUS INTERFACE] Shard is unallocated.`);
                     gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
                     document.getElementById('popup').style.display = 'block';
                     document.getElementById('node-name').value = selectedNode.userData.name;
@@ -691,7 +608,7 @@
             
             const newNodeData = {
                 id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                name: `NODE_${crystalCount.toString().padStart(2,'0')}`,
+                name: `Crystal ${crystalCount}`,
                 color: '#00ffff', height: height, fileStorageKey: "", rawSize: 0, index: crystalCount - 1
             };
             node.userData = newNodeData;
@@ -703,7 +620,115 @@
             }
         }
 
+        async function stagePayloadCompression(file) {
+            const CHUNK_SIZE = 64 * 1024; 
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const zip = new JSZip();
+
+            const manifest = {
+                originName: file.name, mimeType: file.type, rawSizeBytes: file.size, 
+                totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id
+            };
+            zip.file("manifest.json", JSON.stringify(manifest));
+
+            let currentByteBound = 0;
+            for (let i = 0; i < totalChunks; i++) {
+                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
+                const arrayBufferShard = await fileSlice.arrayBuffer();
+                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, arrayBufferShard, { binary: true });
+                currentByteBound += CHUNK_SIZE;
+            }
+
+            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
+            const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+            dispatchToVaultBypass(compressedZipBlob, manifest);
+        }
+
+        async function dispatchToVaultBypass(zipBlob, manifest) {
+            try {
+                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
+                const response = await getUploadSignature({ nodeId: manifest.nodeId });
+                const { uploadUrl, fileStorageKey } = response.data;
+                const transferResult = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/zip" }, body: zipBlob });
+                
+                if (!transferResult.ok) throw new Error("Upload failed to connect to storage.");
+                
+                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
+            } catch (err) {
+                console.error("Upload error:", err);
+                alert("Upload failed. Please try again.");
+            }
+        }
+
+        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
+            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
+                let matrix = doc.data().crystalMatrix;
+                let idx = selectedNode.userData.index;
+                matrix[idx].fileStorageKey = storageKey;
+                matrix[idx].name = filename;
+                matrix[idx].rawSize = bytesize;
+                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
+                    window.rebuildCrystalsFromSchema(matrix);
+                    window.calculateHUDQuota(matrix);
+                    saveAndClose();
+                });
+            });
+        }
+
+        async function rematerializeNodeCore(nodeMesh) {
+            const storageKey = nodeMesh.userData.fileStorageKey;
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'block';
+            tooltip.innerText = "DOWNLOADING...";
+
+            try {
+                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
+                const response = await getDownloadSignature({ fileStorageKey: storageKey });
+                const cloudStream = await fetch(response.data.downloadUrl);
+                const blobData = await cloudStream.blob();
+                const unzipped = await JSZip.loadAsync(blobData);
+                const manifestRaw = await unzipped.file("manifest.json").async("string");
+                const manifest = JSON.parse(manifestRaw);
+
+                let compiledBuffers = [];
+                for (let i = 0; i < manifest.totalFragments; i++) {
+                    const key = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
+                    compiledBuffers.push(await unzipped.file(key).async("arraybuffer"));
+                }
+                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
+                tooltip.style.display = 'none';
+                renderHoloframeContent(URL.createObjectURL(reconstructedBlob), manifest);
+            } catch (err) {
+                console.error("Download failed:", err);
+                tooltip.innerText = "ERROR OPENING FILE";
+                setTimeout(() => tooltip.style.display = 'none', 2000);
+            }
+        }
+
+        function renderHoloframeContent(url, meta) {
+            const viewer = document.getElementById('holoframe-viewer');
+            const target = document.getElementById('holoframe-content');
+            target.innerHTML = ""; 
+            viewer.style.display = "flex";
+
+            if (meta.mimeType.startsWith('image/')) {
+                const img = document.createElement('img'); img.src = url; target.appendChild(img);
+            } else if (meta.mimeType.startsWith('video/')) {
+                const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
+            } else {
+                const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
+            }
+        }
+
         window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; }
+
+        window.calculateHUDQuota = function(matrix) {
+            let totalBytes = 0;
+            matrix.forEach(node => totalBytes += (node.rawSize || 0));
+            const percentage = Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100);
+            document.getElementById('hud-capacity-text').innerText = `STORAGE: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
+            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
+        };
 
         function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;

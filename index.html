@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Personal Fortress</title>
+    <title>Olympus | Fortress of Solitude </title>
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -11,7 +11,11 @@
             --neon-cyan: #00ffff;
             --panel-dark: rgba(2, 6, 14, 0.97);
         }
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
+        /* Mobile Lock to prevent scrolling/bouncing */
+        body, html { 
+            margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; 
+            touch-action: none; overscroll-behavior: none; width: 100vw; height: 100vh;
+        }
         
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -149,9 +153,16 @@
             background: rgba(0, 10, 20, 0.8);
         }
         #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
-        #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow: auto; }
+        #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow: auto; flex-direction: column; }
         #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
         #holoframe-content iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
+        #holoframe-content pre { color: var(--cyan); text-align: left; width: 100%; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
+        
+        .download-fallback-btn {
+            background: rgba(0,255,255,0.1); border: 1px solid var(--cyan); color: var(--cyan);
+            padding: 15px 30px; border-radius: 30px; cursor: pointer; font-size: 14px;
+            text-transform: uppercase; font-weight: bold; text-decoration: none; margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -163,7 +174,10 @@
         <div id="holoframe-container" onclick="event.stopPropagation()">
             <div id="holoframe-header">
                 <span id="holo-title">FILE VIEWER</span>
-                <button class="btn" style="padding: 5px 10px;" onclick="closeHoloframe()">✕</button>
+                <div>
+                    <button class="btn" style="padding: 5px 10px; margin-right: 10px;" id="holo-download-btn">DOWNLOAD</button>
+                    <button class="btn" style="padding: 5px 10px; border-color: #ff00ff; color: #ff00ff;" onclick="closeHoloframe()">✕</button>
+                </div>
             </div>
             <div id="holoframe-content"></div>
         </div>
@@ -230,7 +244,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="importmap">
@@ -262,8 +276,8 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const storage = firebase.storage();
 
-        // Prevent click-through to scene for all UI inputs
         ['auth-email', 'auth-password', 'node-name', 'search-input'].forEach(id => {
             const el = document.getElementById(id);
             if(el) { 
@@ -274,7 +288,7 @@
 
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
-        let uploadTarget = null; // Tracks if we are uploading to 'floor' or 'crystal'
+        let uploadTarget = null; 
 
         window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
@@ -318,7 +332,6 @@
             }
         };
 
-        // When a user successfully logs in, this triggers immediately.
         firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             
@@ -326,7 +339,6 @@
                 currentUserInstance = authenticatedUser;
                 activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
                 
-                // Hide the login screen gracefully
                 gsap.to(shieldOverlay, { 
                     opacity: 0, duration: 0.5, ease: "power2.out",
                     onComplete: () => { shieldOverlay.style.display = 'none'; }
@@ -382,7 +394,7 @@
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
-            camera.position.set(0, 15, 35); // Adjusted angle to ensure crystals are visible
+            camera.position.set(0, 15, 35); 
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -435,7 +447,6 @@
             window.addEventListener('touchstart', onAction, {passive: false});
             window.addEventListener('resize', onResize);
 
-            // SEARCH BAR LOGIC
             document.getElementById('search-input').addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
                 crystals.forEach(c => {
@@ -449,7 +460,6 @@
                 });
             });
 
-            // FILE UPLOAD ROUTER
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 if (e.target.files.length === 0) return;
                 
@@ -470,9 +480,8 @@
                     stagePayloadCompression(e.target.files[0]);
                 }
                 
-                // Reset target
                 uploadTarget = null;
-                e.target.value = ""; // clear input
+                e.target.value = ""; 
             });
         }
 
@@ -513,7 +522,6 @@
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             
-            // Only intersect crystals, NEVER the floor
             const hits = raycaster.intersectObjects(crystals);
             const tooltip = document.getElementById('tooltip');
             
@@ -530,7 +538,6 @@
         }
 
         function onAction(e) {
-            // Ignore UI clicks entirely
             if (e.target.tagName !== 'CANVAS') return;
 
             if (e.touches && e.touches.length > 0) {
@@ -543,7 +550,20 @@
 
             raycaster.setFromCamera(mouse, camera);
             
-            // ONLY check against crystals. The floor is no longer clickable.
+            // Check for floor click to toggle Fullscreen
+            const floorHit = raycaster.intersectObject(floorMesh);
+            if (floorHit.length > 0) {
+                const hitsOnCrystals = raycaster.intersectObjects(crystals);
+                if (hitsOnCrystals.length === 0) {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => console.log(err));
+                    } else {
+                        if (document.exitFullscreen) document.exitFullscreen();
+                    }
+                    return;
+                }
+            }
+
             const hits = raycaster.intersectObjects(crystals);
 
             if (hits.length > 0) {
@@ -620,6 +640,7 @@
             }
         }
 
+        // DIRECT FIREBASE STORAGE UPLOAD FIX
         async function stagePayloadCompression(file) {
             const CHUNK_SIZE = 64 * 1024; 
             const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -641,22 +662,29 @@
 
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
             const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
-            dispatchToVaultBypass(compressedZipBlob, manifest);
+            
+            document.getElementById('popup').style.display = 'none';
+            document.getElementById('tooltip').innerText = "UPLOADING TO VAULT...";
+            document.getElementById('tooltip').style.display = 'block';
+
+            dispatchToNativeVault(compressedZipBlob, manifest);
         }
 
-        async function dispatchToVaultBypass(zipBlob, manifest) {
+        async function dispatchToNativeVault(zipBlob, manifest) {
             try {
-                const getUploadSignature = firebase.functions().httpsCallable('requestSecureUploadLink');
-                const response = await getUploadSignature({ nodeId: manifest.nodeId });
-                const { uploadUrl, fileStorageKey } = response.data;
-                const transferResult = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/zip" }, body: zipBlob });
+                const storagePath = `vaults/${currentUserInstance.uid}/${manifest.nodeId}_core.zip`;
+                const storageRef = storage.ref(storagePath);
                 
-                if (!transferResult.ok) throw new Error("Upload failed to connect to storage.");
+                await storageRef.put(zipBlob);
                 
-                finalizeNodeMetadataUpdate(fileStorageKey, manifest.originName, manifest.rawSizeBytes);
+                document.getElementById('tooltip').style.display = 'none';
+                console.log("[OLYMPUS VAULT] Upload complete to native storage.");
+                
+                finalizeNodeMetadataUpdate(storagePath, manifest.originName, manifest.rawSizeBytes);
             } catch (err) {
                 console.error("Upload error:", err);
-                alert("Upload failed. Please try again.");
+                document.getElementById('tooltip').style.display = 'none';
+                alert("Upload failed. Ensure your Firebase Storage Rules allow writes.");
             }
         }
 
@@ -675,6 +703,7 @@
             });
         }
 
+        // DIRECT FIREBASE STORAGE DOWNLOAD FIX
         async function rematerializeNodeCore(nodeMesh) {
             const storageKey = nodeMesh.userData.fileStorageKey;
             const tooltip = document.getElementById('tooltip');
@@ -682,9 +711,10 @@
             tooltip.innerText = "DOWNLOADING...";
 
             try {
-                const getDownloadSignature = firebase.functions().httpsCallable('requestSecureDownloadLink');
-                const response = await getDownloadSignature({ fileStorageKey: storageKey });
-                const cloudStream = await fetch(response.data.downloadUrl);
+                const storageRef = storage.ref(storageKey);
+                const downloadUrl = await storageRef.getDownloadURL();
+                
+                const cloudStream = await fetch(downloadUrl);
                 const blobData = await cloudStream.blob();
                 const unzipped = await JSZip.loadAsync(blobData);
                 const manifestRaw = await unzipped.file("manifest.json").async("string");
@@ -697,7 +727,19 @@
                 }
                 const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
                 tooltip.style.display = 'none';
-                renderHoloframeContent(URL.createObjectURL(reconstructedBlob), manifest);
+                
+                const finalUrl = URL.createObjectURL(reconstructedBlob);
+                renderHoloframeContent(finalUrl, manifest);
+                
+                // Update download button logic
+                const dlBtn = document.getElementById('holo-download-btn');
+                dlBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = finalUrl;
+                    a.download = manifest.originName;
+                    a.click();
+                };
+
             } catch (err) {
                 console.error("Download failed:", err);
                 tooltip.innerText = "ERROR OPENING FILE";
@@ -711,12 +753,28 @@
             target.innerHTML = ""; 
             viewer.style.display = "flex";
 
-            if (meta.mimeType.startsWith('image/')) {
+            const mime = meta.mimeType || "";
+
+            if (mime.startsWith('image/')) {
                 const img = document.createElement('img'); img.src = url; target.appendChild(img);
-            } else if (meta.mimeType.startsWith('video/')) {
+            } else if (mime.startsWith('video/')) {
                 const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
-            } else {
+            } else if (mime.startsWith('audio/')) {
+                const aud = document.createElement('audio'); aud.src = url; aud.controls = true; aud.autoplay = true; target.appendChild(aud);
+            } else if (mime === 'application/pdf') {
                 const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
+            } else if (mime.startsWith('text/')) {
+                fetch(url).then(res => res.text()).then(text => {
+                    const pre = document.createElement('pre'); pre.textContent = text; target.appendChild(pre);
+                });
+            } else {
+                target.innerHTML = `
+                    <div style="text-align: center; color: white;">
+                        <h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3>
+                        <p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">This file type (${mime || 'Unknown'}) cannot be previewed directly in the browser.</p>
+                        <a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download to Device</a>
+                    </div>
+                `;
             }
         }
 

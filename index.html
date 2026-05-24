@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Fortress of Solitude </title>
+    <title>Olympus | Personal Fortress</title>
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -11,14 +11,14 @@
             --neon-cyan: #00ffff;
             --panel-dark: rgba(2, 6, 14, 0.97);
         }
-        /* Mobile Lock to prevent scrolling/bouncing */
+        /* Mobile Lock using dynamic viewport height */
         body, html { 
             margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; 
-            touch-action: none; overscroll-behavior: none; width: 100vw; height: 100vh;
+            touch-action: none; overscroll-behavior: none; width: 100vw; height: 100dvh;
         }
         
         #ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             pointer-events: none; z-index: 10;
             display: flex; flex-direction: column; justify-content: space-between;
         }
@@ -53,6 +53,16 @@
         }
         .btn:hover { box-shadow: 0 0 20px var(--cyan); background: rgba(0,255,255,0.2); }
 
+        /* Maps-style Recenter Button */
+        #recenter-btn {
+            pointer-events: auto; position: fixed; right: 20px; bottom: 100px;
+            width: 45px; height: 45px; border-radius: 50%; background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--cyan); color: var(--cyan); font-size: 18px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; backdrop-filter: blur(10px); box-shadow: 0 0 15px rgba(0,255,255,0.3);
+            z-index: 100;
+        }
+
         #popup {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: var(--bg); border: 1px solid var(--cyan);
@@ -74,86 +84,71 @@
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
-        #hologram-upload {
-            position: absolute; top: -9999px; left: -9999px; visibility: hidden; pointer-events: none;
-        }
+        #hologram-upload { position: absolute; top: -9999px; left: -9999px; visibility: hidden; pointer-events: none; }
 
         #auth-gateway {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             z-index: 9999; display: flex; justify-content: center; align-items: center;
             background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif;
         }
 
-        #starfield-matrix-bg {
-            position: absolute; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #001226 0%, #000000 100%);
-            opacity: 0.7;
-        }
+        #starfield-matrix-bg { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #001226 0%, #000000 100%); opacity: 0.7; }
 
         .terminal-card {
             position: relative; width: 90%; max-width: 400px;
             background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
             border-radius: 24px; padding: 35px 25px; text-align: center;
-            backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08);
-            z-index: 10001;
+            backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08); z-index: 10001;
         }
 
-        .neon-brand {
-            color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: 4px;
-            margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan);
-        }
-
-        .matrix-subtitle {
-            color: var(--neon-cyan); font-size: 10px; letter-spacing: 2px;
-            opacity: 0.8; margin-bottom: 25px; line-height: 1.6;
-        }
-
+        .neon-brand { color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: 4px; margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan); }
+        .matrix-subtitle { color: var(--neon-cyan); font-size: 10px; letter-spacing: 2px; opacity: 0.8; margin-bottom: 25px; line-height: 1.6; }
         .auth-actions { display: flex; flex-direction: column; gap: 12px; }
-
         .auth-btn {
-            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3);
-            color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 12px;
-            font-weight: 700; cursor: pointer; transition: 0.3s;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3); color: #fff; padding: 14px 20px; 
+            border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.3s;
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-
         .auth-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.1); }
-
         .credential-fields { display: flex; flex-direction: column; width: 100%; }
-
         .credential-input {
             width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; 
             border: 1px solid rgba(0,255,255,0.2)!important; color: white!important; 
             font-size: 13px!important; text-align: left!important; padding: 12px!important; 
-            margin-bottom: 12px!important; outline: none; border-radius: 8px!important;
-            z-index: 20000; position: relative;
+            margin-bottom: 12px!important; outline: none; border-radius: 8px!important; z-index: 20000; position: relative;
         }
         .credential-input::placeholder { color: rgba(255,255,255,0.4); text-transform: none; }
+        #auth-status-log { margin-top: 20px; font-size: 11px; color: #ff00ff; letter-spacing: 1px; text-transform: uppercase; display: none; }
 
-        #auth-status-log {
-            margin-top: 20px; font-size: 11px; color: #ff00ff; 
-            letter-spacing: 1px; text-transform: uppercase; display: none;
-        }
-
+        /* VIEWPORT (HOLOFRAME) STYLING - TRANSLUCENT AND CENTERED */
         #holoframe-viewer {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 3, 8, 0.92); z-index: 5000;
-            display: none; justify-content: center; align-items: center;
-            backdrop-filter: blur(25px);
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+            background: transparent; z-index: 5000; display: none; justify-content: center; align-items: center;
+            pointer-events: none; /* Let clicks pass through background to the 3D floor */
         }
         #holoframe-container {
-            width: 90vw; height: 85vh; max-width: 1000px;
-            background: rgba(0, 20, 35, 0.6); border: 1px solid rgba(0, 255, 255, 0.4);
+            width: 90vw; height: 75dvh; max-width: 900px;
+            background: rgba(0, 15, 25, 0.85); border: 1px solid rgba(0, 255, 255, 0.5);
             border-radius: 15px; display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 0 100px rgba(0,255,255,0.15);
+            overflow: hidden; box-shadow: 0 0 50px rgba(0,255,255,0.2);
+            pointer-events: auto; /* Catch clicks inside the viewport */
+            backdrop-filter: blur(15px);
         }
         #holoframe-header {
-            padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0, 10, 20, 0.8);
+            padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            display: flex; justify-content: space-between; align-items: center; background: rgba(0, 5, 10, 0.9);
         }
         #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
-        #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow: auto; flex-direction: column; }
+        
+        /* SCROLLBAR STYLING FOR DOCUMENTS */
+        #holoframe-content { 
+            flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; 
+            overflow-y: auto; overflow-x: hidden; flex-direction: column; 
+        }
+        #holoframe-content::-webkit-scrollbar { width: 8px; }
+        #holoframe-content::-webkit-scrollbar-track { background: rgba(0,255,255,0.05); }
+        #holoframe-content::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 10px; }
+
         #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
         #holoframe-content iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
         #holoframe-content pre { color: var(--cyan); text-align: left; width: 100%; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
@@ -161,7 +156,7 @@
         .download-fallback-btn {
             background: rgba(0,255,255,0.1); border: 1px solid var(--cyan); color: var(--cyan);
             padding: 15px 30px; border-radius: 30px; cursor: pointer; font-size: 14px;
-            text-transform: uppercase; font-weight: bold; text-decoration: none; margin-top: 15px;
+            text-transform: uppercase; font-weight: bold; text-decoration: none; margin-top: 15px; display: inline-block;
         }
     </style>
 </head>
@@ -170,13 +165,12 @@
     <div id="tooltip">SCANNING...</div>
     <input type="file" id="hologram-upload">
 
-    <div id="holoframe-viewer" onclick="closeHoloframe()">
-        <div id="holoframe-container" onclick="event.stopPropagation()">
+    <div id="holoframe-viewer">
+        <div id="holoframe-container">
             <div id="holoframe-header">
-                <span id="holo-title">FILE VIEWER</span>
+                <span id="holo-title">FILE VIEWPORT</span>
                 <div>
-                    <button class="btn" style="padding: 5px 10px; margin-right: 10px;" id="holo-download-btn">DOWNLOAD</button>
-                    <button class="btn" style="padding: 5px 10px; border-color: #ff00ff; color: #ff00ff;" onclick="closeHoloframe()">✕</button>
+                    <button class="btn" style="padding: 5px 10px; border-color: #ff00ff; color: #ff00ff;" onclick="closeHoloframe()">✕ CLOSE</button>
                 </div>
             </div>
             <div id="holoframe-content"></div>
@@ -190,23 +184,17 @@
             <p class="matrix-subtitle">PLEASE LOG IN TO ACCESS YOUR VAULT</p>
             
             <div class="auth-actions">
-                <button class="auth-btn" onclick="executeSecureAuth('google')">
-                    🌐 Continue with Google
-                </button>
-                
+                <button class="auth-btn" onclick="executeSecureAuth('google')">🌐 Continue with Google</button>
                 <div style="margin: 10px 0; font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px;">OR USE EMAIL</div>
-                
                 <div class="credential-fields">
                     <input type="text" id="auth-email" class="credential-input" placeholder="Email Address">
                     <input type="password" id="auth-password" class="credential-input" placeholder="Password" style="margin-bottom: 20px!important;">
-                    
                     <div style="display: flex; gap: 10px;">
                         <button class="btn" style="flex: 1; border-radius: 12px;" onclick="executeSecureAuth('email-login')">Log In</button>
                         <button class="btn" style="flex: 1; border-radius: 12px; border-color: #ff00ff; color: #ff00ff;" onclick="executeSecureAuth('email-register')">Register</button>
                     </div>
                 </div>
             </div>
-            
             <div id="auth-status-log">CONNECTING...</div>
         </div>
     </div>
@@ -216,11 +204,22 @@
             <input type="text" id="search-input" placeholder="Search your vault...">
         </div>
 
+        <button id="recenter-btn" onclick="recenterCamera()" title="Recenter Camera">⌖</button>
+
         <div id="popup">
             <input type="text" id="node-name" value="CRYSTAL_NODE" style="font-size: 1.2em;">
-            <button class="btn" style="width:100%; margin-bottom:20px;" onclick="triggerCrystalUpload()">Upload File to Crystal</button>
+            
+            <div id="popup-empty-state">
+                <button class="btn" style="width:100%; margin-bottom:10px;" onclick="triggerCrystalUpload()">Upload File</button>
+            </div>
+            
+            <div id="popup-filled-state" style="display: none; gap: 10px; margin-bottom: 10px;">
+                <button class="btn" style="flex: 1;" onclick="viewActiveCrystal()">View in Viewport</button>
+                <button class="btn" style="flex: 1; border-color: #ff00ff; color: #ff00ff;" onclick="downloadActiveCrystal()">Download</button>
+            </div>
+
             <span style="font-size:10px; letter-spacing:3px; color:var(--cyan);">CRYSTAL COLOR</span>
-            <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:50px; border:none; background:none; cursor:pointer; margin-top:10px;">
+            <input type="color" id="color-picker" value="#00ffff" style="width:100%; height:50px; border:none; background:none; cursor:pointer; margin-top:5px;">
             <br><br>
             <button class="btn" onclick="saveAndClose()" style="width:100%;">Save Changes</button>
         </div>
@@ -282,13 +281,15 @@
             const el = document.getElementById(id);
             if(el) { 
                 el.addEventListener('mousedown', e => e.stopPropagation()); 
-                el.addEventListener('touchstart', e => e.stopPropagation()); 
+                el.addEventListener('touchstart', e => e.stopPropagation(), {passive: false}); 
             }
         });
 
         let currentUserInstance = null;
         let activeUserVaultSegment = "";
         let uploadTarget = null; 
+        let activeDownloadUrl = null;
+        let activeManifest = null;
 
         window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
@@ -297,59 +298,32 @@
             if (routeType === 'google') {
                 const authProvider = new firebase.auth.GoogleAuthProvider();
                 if (statusLog) statusLog.innerText = "Redirecting to Google...";
-                firebase.auth().signInWithRedirect(authProvider)
-                    .catch((err) => {
-                        alert(`Error: ${err.message}`);
-                        if (statusLog) statusLog.style.display = "none";
-                    });
+                firebase.auth().signInWithRedirect(authProvider).catch(err => { alert(err.message); });
             } else {
                 const email = document.getElementById('auth-email').value;
                 const password = document.getElementById('auth-password').value;
-                
-                if (!email || !password) {
-                    if (statusLog) statusLog.style.display = "none";
-                    return alert("Please enter both an email and password.");
-                }
+                if (!email || !password) return alert("Please enter both an email and password.");
 
                 if (routeType === 'email-login') {
                     if (statusLog) statusLog.innerText = "Logging in...";
-                    firebase.auth().signInWithEmailAndPassword(email, password)
-                        .catch((err) => {
-                            let msg = err.message;
-                            if (err.code === 'auth/invalid-credential') msg = "Invalid email or password.";
-                            alert(msg);
-                            if (statusLog) statusLog.style.display = "none";
-                        });
-
+                    firebase.auth().signInWithEmailAndPassword(email, password).catch(err => alert("Invalid credentials."));
                 } else if (routeType === 'email-register') {
-                    if (statusLog) statusLog.innerText = "Creating your account...";
-                    firebase.auth().createUserWithEmailAndPassword(email, password)
-                        .catch((err) => {
-                            alert(`Error: ${err.message}`);
-                            if (statusLog) statusLog.style.display = "none";
-                        });
+                    if (statusLog) statusLog.innerText = "Creating account...";
+                    firebase.auth().createUserWithEmailAndPassword(email, password).catch(err => alert(err.message));
                 }
             }
         };
 
-        firebase.auth().onAuthStateChanged(async (authenticatedUser) => {
-            const shieldOverlay = document.getElementById('auth-gateway');
-            
-            if (authenticatedUser) {
-                currentUserInstance = authenticatedUser;
-                activeUserVaultSegment = `vaults/${authenticatedUser.uid}`;
-                
-                gsap.to(shieldOverlay, { 
-                    opacity: 0, duration: 0.5, ease: "power2.out",
-                    onComplete: () => { shieldOverlay.style.display = 'none'; }
-                });
-
-                await initializeUserFortressInstance(authenticatedUser.uid);
+        firebase.auth().onAuthStateChanged(async (user) => {
+            const shield = document.getElementById('auth-gateway');
+            if (user) {
+                currentUserInstance = user;
+                gsap.to(shield, { opacity: 0, duration: 0.5, onComplete: () => shield.style.display = 'none' });
+                await initializeUserFortressInstance(user.uid);
             } else {
                 currentUserInstance = null;
-                activeUserVaultSegment = "";
-                shieldOverlay.style.display = 'flex';
-                shieldOverlay.style.opacity = '1';
+                shield.style.display = 'flex';
+                shield.style.opacity = '1';
             }
         });
 
@@ -366,26 +340,19 @@
                     for (let i = 0; i < 12; i++) {
                         starterMatrix.push({
                             id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                            name: `Crystal ${i+1}`,
-                            color: "#00ffff",
-                            height: 4 + Math.random() * 1.5,
-                            fileStorageKey: "", 
-                            rawSize: 0
+                            name: `Crystal ${i+1}`, color: "#00ffff", height: 4 + Math.random() * 1.5,
+                            fileStorageKey: "", rawSize: 0
                         });
                     }
                     await docRef.set({ crystalMatrix: starterMatrix });
                     window.rebuildCrystalsFromSchema(starterMatrix);
                     window.calculateHUDQuota(starterMatrix);
                 }
-            } catch (err) {
-                console.error("Database sync failed:", err);
-            }
+            } catch (err) { console.error("Database sync failed:", err); }
         }
 
         let scene, camera, renderer, composer, controls, raycaster, mouse;
-        let crystals = [];
-        let crystalCount = 12;
-        let selectedNode = null;
+        let crystals = [], crystalCount = 12, selectedNode = null;
         let floorMesh, carouselGroup, innerDome, outerDome;
 
         init();
@@ -406,23 +373,12 @@
             carouselGroup = new THREE.Group();
             scene.add(carouselGroup);
 
-            const domeGeo = new THREE.SphereGeometry(60, 40, 40);
-            outerDome = new THREE.Mesh(domeGeo, new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228660207.png'), side: THREE.BackSide, transparent: true, opacity: 0.1 
-            }));
+            outerDome = new THREE.Mesh(new THREE.SphereGeometry(60, 40, 40), new THREE.MeshBasicMaterial({ map: loader.load('assets/1776228660207.png'), side: THREE.BackSide, transparent: true, opacity: 0.1 }));
             scene.add(outerDome);
-
-            innerDome = new THREE.Mesh(new THREE.SphereGeometry(59, 40, 40), new THREE.MeshBasicMaterial({ 
-                map: loader.load('assets/1776228269143.png'), side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending 
-            }));
+            innerDome = new THREE.Mesh(new THREE.SphereGeometry(59, 40, 40), new THREE.MeshBasicMaterial({ map: loader.load('assets/1776228269143.png'), side: THREE.BackSide, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending }));
             scene.add(innerDome);
 
-            const floorGeo = new THREE.CircleGeometry(15, 128);
-            const floorMat = new THREE.MeshBasicMaterial({ 
-                color: 0x555555, transparent: true, opacity: 0.5, 
-                blending: THREE.AdditiveBlending, side: THREE.DoubleSide 
-            });
-            floorMesh = new THREE.Mesh(floorGeo, floorMat);
+            floorMesh = new THREE.Mesh(new THREE.CircleGeometry(15, 128), new THREE.MeshBasicMaterial({ color: 0x555555, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
             floorMesh.rotation.x = -Math.PI / 2;
             scene.add(floorMesh);
 
@@ -433,11 +389,8 @@
             composer.addPass(bloomPass);
 
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI * 0.48;
-            controls.minDistance = 10;
-            controls.maxDistance = 50;
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI * 0.48; controls.minDistance = 5; controls.maxDistance = 50;
 
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
@@ -450,19 +403,13 @@
             document.getElementById('search-input').addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
                 crystals.forEach(c => {
-                    if (c.userData.name.toLowerCase().includes(term)) {
-                        c.material.opacity = 1;
-                        c.material.transparent = false;
-                    } else {
-                        c.material.opacity = 0.15;
-                        c.material.transparent = true;
-                    }
+                    if (c.userData.name.toLowerCase().includes(term)) { c.material.opacity = 1; c.material.transparent = false; }
+                    else { c.material.opacity = 0.15; c.material.transparent = true; }
                 });
             });
 
             document.getElementById('hologram-upload').addEventListener('change', function(e) {
                 if (e.target.files.length === 0) return;
-                
                 if (uploadTarget === 'floor') {
                     const file = e.target.files[0];
                     const url = URL.createObjectURL(file);
@@ -470,122 +417,78 @@
                         const video = document.createElement('video');
                         video.src = url; video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true; video.play();
                         floorMesh.material.map = new THREE.VideoTexture(video);
-                    } else {
-                        floorMesh.material.map = loader.load(url);
-                    }
-                    floorMesh.material.color.setHex(0xffffff);
-                    floorMesh.material.opacity = 0.9;
-                    floorMesh.material.needsUpdate = true;
+                    } else { floorMesh.material.map = loader.load(url); }
+                    floorMesh.material.color.setHex(0xffffff); floorMesh.material.opacity = 0.9; floorMesh.material.needsUpdate = true;
                 } else if (uploadTarget === 'crystal' && selectedNode) {
                     stagePayloadCompression(e.target.files[0]);
                 }
-                
-                uploadTarget = null;
-                e.target.value = ""; 
+                uploadTarget = null; e.target.value = ""; 
             });
         }
+
+        window.recenterCamera = function() {
+            gsap.to(camera.position, { x: 0, y: 15, z: 35, duration: 1, ease: "power2.out" });
+            gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1, ease: "power2.out" });
+        };
 
         window.rebuildCrystalsFromSchema = function(schema) {
             crystals.forEach(c => carouselGroup.remove(c));
             crystals = [];
             crystalCount = schema.length;
-
             schema.forEach((nodeData, i) => {
                 const angle = (i / crystalCount) * Math.PI * 2;
-                const radius = 11;
-                const geo = new THREE.CylinderGeometry(0.5, 0.4, nodeData.height, 6);
-                const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
-                const mat = new THREE.MeshStandardMaterial({ 
-                    map: tex, emissive: new THREE.Color(nodeData.color), 
-                    emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 
-                });
-                const node = new THREE.Mesh(geo, mat);
-                node.position.set(Math.cos(angle) * radius, nodeData.height / 2, Math.sin(angle) * radius);
+                const node = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, nodeData.height, 6), new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('assets/1776228269143.png'), emissive: new THREE.Color(nodeData.color), emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 }));
+                node.position.set(Math.cos(angle) * 11, nodeData.height / 2, Math.sin(angle) * 11);
                 node.userData = { ...nodeData, index: i };
-                carouselGroup.add(node);
-                crystals.push(node);
+                carouselGroup.add(node); crystals.push(node);
             });
         };
 
-        window.triggerFloorUpload = function() {
-            uploadTarget = 'floor';
-            document.getElementById('hologram-upload').click();
-        };
-
-        window.triggerCrystalUpload = function() {
-            uploadTarget = 'crystal';
-            document.getElementById('hologram-upload').click();
-        };
+        window.triggerFloorUpload = function() { uploadTarget = 'floor'; document.getElementById('hologram-upload').click(); };
+        window.triggerCrystalUpload = function() { uploadTarget = 'crystal'; document.getElementById('hologram-upload').click(); };
 
         function onHover(e) {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-            
             const hits = raycaster.intersectObjects(crystals);
             const tooltip = document.getElementById('tooltip');
-            
             if (hits.length > 0 && !selectedNode) {
-                tooltip.style.display = 'block';
-                tooltip.style.left = `${e.clientX + 20}px`;
-                tooltip.style.top = `${e.clientY + 20}px`;
-                tooltip.innerText = hits[0].object.userData.name;
-                document.body.style.cursor = 'pointer';
+                tooltip.style.display = 'block'; tooltip.style.left = `${e.clientX + 20}px`; tooltip.style.top = `${e.clientY + 20}px`;
+                tooltip.innerText = hits[0].object.userData.name; document.body.style.cursor = 'pointer';
             } else {
-                if(tooltip.innerText !== "DOWNLOADING...") tooltip.style.display = 'none';
+                if(tooltip.innerText !== "DOWNLOADING..." && tooltip.innerText !== "UPLOADING...") tooltip.style.display = 'none';
                 document.body.style.cursor = 'default';
             }
         }
 
         function onAction(e) {
             if (e.target.tagName !== 'CANVAS') return;
-
-            if (e.touches && e.touches.length > 0) {
-                mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-            } else {
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            }
+            if (e.touches && e.touches.length > 0) { mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1; } 
+            else { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
 
             raycaster.setFromCamera(mouse, camera);
-            
-            // Check for floor click to toggle Fullscreen
-            const floorHit = raycaster.intersectObject(floorMesh);
-            if (floorHit.length > 0) {
-                const hitsOnCrystals = raycaster.intersectObjects(crystals);
-                if (hitsOnCrystals.length === 0) {
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(err => console.log(err));
-                    } else {
-                        if (document.exitFullscreen) document.exitFullscreen();
-                    }
-                    return;
-                }
-            }
-
             const hits = raycaster.intersectObjects(crystals);
 
             if (hits.length > 0) {
                 const obj = hits[0].object;
-                const storageKey = obj.userData.fileStorageKey;
                 selectedNode = obj;
-
-                if (storageKey) {
-                    rematerializeNodeCore(obj);
+                gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
+                
+                document.getElementById('popup').style.display = 'block';
+                document.getElementById('node-name').value = selectedNode.userData.name;
+                document.getElementById('color-picker').value = selectedNode.userData.color;
+                
+                if (obj.userData.fileStorageKey) {
+                    document.getElementById('popup-empty-state').style.display = 'none';
+                    document.getElementById('popup-filled-state').style.display = 'flex';
                 } else {
-                    gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
-                    document.getElementById('popup').style.display = 'block';
-                    document.getElementById('node-name').value = selectedNode.userData.name;
-                    document.getElementById('color-picker').value = selectedNode.userData.color;
-
-                    document.getElementById('color-picker').oninput = (ev) => {
-                        const col = ev.target.value;
-                        selectedNode.material.emissive.set(col);
-                        selectedNode.material.color.set(col);
-                        selectedNode.userData.color = col;
-                    };
+                    document.getElementById('popup-empty-state').style.display = 'block';
+                    document.getElementById('popup-filled-state').style.display = 'none';
                 }
+
+                document.getElementById('color-picker').oninput = (ev) => {
+                    selectedNode.material.emissive.set(ev.target.value); selectedNode.material.color.set(ev.target.value); selectedNode.userData.color = ev.target.value;
+                };
             } else { 
                 if (document.getElementById('popup').style.display === 'block') saveAndClose(); 
             }
@@ -595,13 +498,11 @@
             if(selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
                 gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
-                
                 if (currentUserInstance) {
                     db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
                         let matrix = doc.data().crystalMatrix;
-                        let idx = selectedNode.userData.index;
-                        matrix[idx].name = selectedNode.userData.name;
-                        matrix[idx].color = selectedNode.userData.color;
+                        matrix[selectedNode.userData.index].name = selectedNode.userData.name;
+                        matrix[selectedNode.userData.index].color = selectedNode.userData.color;
                         db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix });
                     });
                 }
@@ -612,51 +513,24 @@
 
         window.spawnCrystal = function() {
             crystalCount++;
-            crystals.forEach((c, i) => {
-                const angle = (i / crystalCount) * Math.PI * 2;
-                gsap.to(c.position, { x: Math.cos(angle)*11, z: Math.sin(angle)*11, duration: 1 });
-            });
-            
-            const angle = ((crystalCount - 1) / crystalCount) * Math.PI * 2;
-            const radius = 11;
-            const height = 4 + Math.random() * 1.5;
-            const geo = new THREE.CylinderGeometry(0.5, 0.4, height, 6);
-            const tex = new THREE.TextureLoader().load('assets/1776228269143.png');
-            const mat = new THREE.MeshStandardMaterial({ map: tex, emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 });
-            const node = new THREE.Mesh(geo, mat);
-            node.position.set(Math.cos(angle)*radius, height/2, Math.sin(angle)*radius);
-            
-            const newNodeData = {
-                id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                name: `Crystal ${crystalCount}`,
-                color: '#00ffff', height: height, fileStorageKey: "", rawSize: 0, index: crystalCount - 1
-            };
-            node.userData = newNodeData;
-            carouselGroup.add(node);
-            crystals.push(node);
-
-            if (currentUserInstance) {
-                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: firebase.firestore.FieldValue.arrayUnion(newNodeData) });
-            }
+            crystals.forEach((c, i) => { gsap.to(c.position, { x: Math.cos((i / crystalCount) * Math.PI * 2)*11, z: Math.sin((i / crystalCount) * Math.PI * 2)*11, duration: 1 }); });
+            const node = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 4 + Math.random() * 1.5, 6), new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('assets/1776228269143.png'), emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 }));
+            node.position.set(Math.cos(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11, node.geometry.parameters.height/2, Math.sin(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11);
+            node.userData = { id: `node_${Date.now()}`, name: `Crystal ${crystalCount}`, color: '#00ffff', height: node.geometry.parameters.height, fileStorageKey: "", rawSize: 0, index: crystalCount - 1 };
+            carouselGroup.add(node); crystals.push(node);
+            if (currentUserInstance) db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: firebase.firestore.FieldValue.arrayUnion(node.userData) });
         }
 
-        // DIRECT FIREBASE STORAGE UPLOAD FIX
+        // DIRECT FIREBASE STORAGE UPLOAD
         async function stagePayloadCompression(file) {
-            const CHUNK_SIZE = 64 * 1024; 
-            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const CHUNK_SIZE = 64 * 1024; const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
             const zip = new JSZip();
-
-            const manifest = {
-                originName: file.name, mimeType: file.type, rawSizeBytes: file.size, 
-                totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id
-            };
+            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id };
             zip.file("manifest.json", JSON.stringify(manifest));
 
             let currentByteBound = 0;
             for (let i = 0; i < totalChunks; i++) {
-                const fileSlice = file.slice(currentByteBound, currentByteBound + CHUNK_SIZE);
-                const arrayBufferShard = await fileSlice.arrayBuffer();
-                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, arrayBufferShard, { binary: true });
+                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, await file.slice(currentByteBound, currentByteBound + CHUNK_SIZE).arrayBuffer(), { binary: true });
                 currentByteBound += CHUNK_SIZE;
             }
 
@@ -664,145 +538,79 @@
             const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
             
             document.getElementById('popup').style.display = 'none';
-            document.getElementById('tooltip').innerText = "UPLOADING TO VAULT...";
-            document.getElementById('tooltip').style.display = 'block';
+            const tt = document.getElementById('tooltip'); tt.innerText = "UPLOADING..."; tt.style.display = 'block';
 
-            dispatchToNativeVault(compressedZipBlob, manifest);
-        }
-
-        async function dispatchToNativeVault(zipBlob, manifest) {
             try {
                 const storagePath = `vaults/${currentUserInstance.uid}/${manifest.nodeId}_core.zip`;
-                const storageRef = storage.ref(storagePath);
+                await storage.ref(storagePath).put(compressedZipBlob);
+                tt.style.display = 'none';
                 
-                await storageRef.put(zipBlob);
-                
-                document.getElementById('tooltip').style.display = 'none';
-                console.log("[OLYMPUS VAULT] Upload complete to native storage.");
-                
-                finalizeNodeMetadataUpdate(storagePath, manifest.originName, manifest.rawSizeBytes);
-            } catch (err) {
-                console.error("Upload error:", err);
-                document.getElementById('tooltip').style.display = 'none';
-                alert("Upload failed. Ensure your Firebase Storage Rules allow writes.");
-            }
-        }
-
-        function finalizeNodeMetadataUpdate(storageKey, filename, bytesize) {
-            db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
-                let matrix = doc.data().crystalMatrix;
-                let idx = selectedNode.userData.index;
-                matrix[idx].fileStorageKey = storageKey;
-                matrix[idx].name = filename;
-                matrix[idx].rawSize = bytesize;
-                db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                    window.rebuildCrystalsFromSchema(matrix);
-                    window.calculateHUDQuota(matrix);
-                    saveAndClose();
+                db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
+                    let matrix = doc.data().crystalMatrix;
+                    matrix[selectedNode.userData.index].fileStorageKey = storagePath;
+                    matrix[selectedNode.userData.index].name = manifest.originName;
+                    matrix[selectedNode.userData.index].rawSize = manifest.rawSizeBytes;
+                    db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
+                        window.rebuildCrystalsFromSchema(matrix); window.calculateHUDQuota(matrix); saveAndClose();
+                    });
                 });
-            });
+            } catch (err) { console.error("Upload error:", err); tt.style.display = 'none'; alert("Upload failed. Check Firebase Storage rules."); }
         }
 
-        // DIRECT FIREBASE STORAGE DOWNLOAD FIX
-        async function rematerializeNodeCore(nodeMesh) {
-            const storageKey = nodeMesh.userData.fileStorageKey;
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.display = 'block';
-            tooltip.innerText = "DOWNLOADING...";
-
+        // PREPARE FILE FOR VIEWING OR DOWNLOADING
+        async function extractCrystalData() {
+            const storageKey = selectedNode.userData.fileStorageKey;
+            const tt = document.getElementById('tooltip'); tt.style.display = 'block'; tt.innerText = "DECRYPTING...";
             try {
-                const storageRef = storage.ref(storageKey);
-                const downloadUrl = await storageRef.getDownloadURL();
-                
+                const downloadUrl = await storage.ref(storageKey).getDownloadURL();
                 const cloudStream = await fetch(downloadUrl);
-                const blobData = await cloudStream.blob();
-                const unzipped = await JSZip.loadAsync(blobData);
-                const manifestRaw = await unzipped.file("manifest.json").async("string");
-                const manifest = JSON.parse(manifestRaw);
-
+                const unzipped = await JSZip.loadAsync(await cloudStream.blob());
+                activeManifest = JSON.parse(await unzipped.file("manifest.json").async("string"));
+                
                 let compiledBuffers = [];
-                for (let i = 0; i < manifest.totalFragments; i++) {
-                    const key = `fragments/shard_${i.toString().padStart(6, '0')}.dat`;
-                    compiledBuffers.push(await unzipped.file(key).async("arraybuffer"));
+                for (let i = 0; i < activeManifest.totalFragments; i++) {
+                    compiledBuffers.push(await unzipped.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`).async("arraybuffer"));
                 }
-                const reconstructedBlob = new Blob(compiledBuffers, { type: manifest.mimeType });
-                tooltip.style.display = 'none';
-                
-                const finalUrl = URL.createObjectURL(reconstructedBlob);
-                renderHoloframeContent(finalUrl, manifest);
-                
-                // Update download button logic
-                const dlBtn = document.getElementById('holo-download-btn');
-                dlBtn.onclick = () => {
-                    const a = document.createElement('a');
-                    a.href = finalUrl;
-                    a.download = manifest.originName;
-                    a.click();
-                };
-
-            } catch (err) {
-                console.error("Download failed:", err);
-                tooltip.innerText = "ERROR OPENING FILE";
-                setTimeout(() => tooltip.style.display = 'none', 2000);
-            }
+                const reconstructedBlob = new Blob(compiledBuffers, { type: activeManifest.mimeType });
+                activeDownloadUrl = URL.createObjectURL(reconstructedBlob);
+                tt.style.display = 'none';
+                return true;
+            } catch (err) { console.error("Extraction failed:", err); tt.innerText = "ERROR"; setTimeout(() => tt.style.display = 'none', 2000); return false; }
         }
 
-        function renderHoloframeContent(url, meta) {
-            const viewer = document.getElementById('holoframe-viewer');
-            const target = document.getElementById('holoframe-content');
-            target.innerHTML = ""; 
-            viewer.style.display = "flex";
+        window.viewActiveCrystal = async function() {
+            document.getElementById('popup').style.display = 'none';
+            if(await extractCrystalData()) {
+                const target = document.getElementById('holoframe-content'); target.innerHTML = ""; 
+                document.getElementById('holoframe-viewer').style.display = "flex";
+                const mime = activeManifest.mimeType || "";
 
-            const mime = meta.mimeType || "";
-
-            if (mime.startsWith('image/')) {
-                const img = document.createElement('img'); img.src = url; target.appendChild(img);
-            } else if (mime.startsWith('video/')) {
-                const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; target.appendChild(vid);
-            } else if (mime.startsWith('audio/')) {
-                const aud = document.createElement('audio'); aud.src = url; aud.controls = true; aud.autoplay = true; target.appendChild(aud);
-            } else if (mime === 'application/pdf') {
-                const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe);
-            } else if (mime.startsWith('text/')) {
-                fetch(url).then(res => res.text()).then(text => {
-                    const pre = document.createElement('pre'); pre.textContent = text; target.appendChild(pre);
-                });
-            } else {
-                target.innerHTML = `
-                    <div style="text-align: center; color: white;">
-                        <h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3>
-                        <p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">This file type (${mime || 'Unknown'}) cannot be previewed directly in the browser.</p>
-                        <a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download to Device</a>
-                    </div>
-                `;
+                if (mime.startsWith('image/')) { const img = document.createElement('img'); img.src = activeDownloadUrl; target.appendChild(img); } 
+                else if (mime.startsWith('video/')) { const vid = document.createElement('video'); vid.src = activeDownloadUrl; vid.controls = true; vid.autoplay = true; target.appendChild(vid); } 
+                else if (mime.startsWith('audio/')) { const aud = document.createElement('audio'); aud.src = activeDownloadUrl; aud.controls = true; target.appendChild(aud); } 
+                else if (mime === 'application/pdf') { const iframe = document.createElement('iframe'); iframe.src = activeDownloadUrl; target.appendChild(iframe); } 
+                else if (mime.startsWith('text/')) { fetch(activeDownloadUrl).then(res => res.text()).then(text => { const pre = document.createElement('pre'); pre.textContent = text; target.appendChild(pre); }); } 
+                else {
+                    target.innerHTML = `<div style="text-align: center; color: white;"><h3 style="color: var(--cyan); margin-bottom: 10px;">${activeManifest.originName}</h3><p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">This file type cannot be previewed. Please download.</p><a href="${activeDownloadUrl}" download="${activeManifest.originName}" class="download-fallback-btn">Download File</a></div>`;
+                }
             }
-        }
-
-        window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; }
-
-        window.calculateHUDQuota = function(matrix) {
-            let totalBytes = 0;
-            matrix.forEach(node => totalBytes += (node.rawSize || 0));
-            const percentage = Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100);
-            document.getElementById('hud-capacity-text').innerText = `STORAGE: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
-            document.getElementById('hud-capacity-bar').style.width = `${percentage}%`;
         };
 
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        }
+        window.downloadActiveCrystal = async function() {
+            document.getElementById('popup').style.display = 'none';
+            if(await extractCrystalData()) {
+                const a = document.createElement('a'); a.href = activeDownloadUrl; a.download = activeManifest.originName; a.click();
+            }
+        };
 
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            carouselGroup.rotation.y += 0.0015;
-            innerDome.rotation.y -= 0.0005;
-            outerDome.rotation.y += 0.0002;
-            composer.render();
-        }
+        window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; }
+        window.calculateHUDQuota = function(matrix) {
+            let totalBytes = 0; matrix.forEach(n => totalBytes += (n.rawSize || 0));
+            document.getElementById('hud-capacity-text').innerText = `STORAGE: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
+            document.getElementById('hud-capacity-bar').style.width = `${Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100)}%`;
+        };
+        function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
+        function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
     </script>
 </body>
 </html>

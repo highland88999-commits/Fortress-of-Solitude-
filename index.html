@@ -114,7 +114,7 @@
             width: 90vw; height: 75dvh; max-width: 900px; background: rgba(0, 15, 25, 0.85); border: 1px solid rgba(0, 255, 255, 0.5); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,255,255,0.2); pointer-events: auto; backdrop-filter: blur(15px);
         }
         #holoframe-header { padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 5, 10, 0.9); }
-        #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
+        #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
         #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow-y: auto; overflow-x: hidden; flex-direction: column; }
         #holoframe-content::-webkit-scrollbar { width: 8px; }
         #holoframe-content::-webkit-scrollbar-track { background: rgba(0,255,255,0.05); }
@@ -646,11 +646,14 @@
             target.innerHTML = ""; 
             viewer.style.display = "flex";
             const mime = meta.mimeType || "";
+            document.getElementById('holo-title').innerText = meta.originName || "FILE VIEWPORT";
 
             if (mime.startsWith('image/')) { const img = document.createElement('img'); img.src = url; target.appendChild(img); } 
             else if (mime.startsWith('video/')) { const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; target.appendChild(vid); } 
             else if (mime.startsWith('audio/')) { const aud = document.createElement('audio'); aud.src = url; aud.controls = true; aud.autoplay = true; target.appendChild(aud); } 
-            else if (mime === 'application/pdf') { const iframe = document.createElement('iframe'); iframe.src = url; target.appendChild(iframe); } 
+            else if (mime === 'application/pdf') { 
+                target.innerHTML = `<div style="text-align: center; color: white;"><h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3><p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">PDF files cannot be reliably rendered in the mobile 3D viewport.</p><a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download PDF</a></div>`; 
+            } 
             else if (mime.startsWith('text/')) { fetch(url).then(res => res.text()).then(text => { const pre = document.createElement('pre'); pre.textContent = text; target.appendChild(pre); }); } 
             else { target.innerHTML = `<div style="text-align: center; color: white;"><h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3><p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">This file type cannot be previewed. Please download.</p><a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download File</a></div>`; }
             
@@ -667,7 +670,10 @@
             document.getElementById('hud-capacity-bar').style.width = `${Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100)}%`;
         };
         
+        // THE IGNITION SWITCH
         init();
+        animate(); 
+
         function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
         function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
     </script>

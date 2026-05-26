@@ -10,8 +10,11 @@
             --bg: rgba(0, 5, 10, 0.98); 
             --neon-cyan: #00ffff;
             --panel-dark: rgba(2, 6, 14, 0.97);
+            --god-gold: #ffd700;
+            --elder-purple: #b026ff;
+            --krypt-green: #00ff66;
         }
-        /* Mobile Lock using dynamic viewport height */
+        
         body, html { 
             margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; 
             touch-action: none; overscroll-behavior: none; width: 100vw; height: 100dvh;
@@ -23,9 +26,7 @@
             display: flex; flex-direction: column; justify-content: space-between;
         }
 
-        #top-bar {
-            pointer-events: auto; width: 92%; max-width: 700px; margin: 25px auto 0 auto;
-        }
+        #top-bar { pointer-events: auto; width: 92%; max-width: 700px; margin: 25px auto 0 auto; }
 
         #search-input {
             width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.6); 
@@ -37,23 +38,22 @@
         #search-input::placeholder { color: rgba(0, 255, 255, 0.5); text-transform: uppercase; font-size: 12px;}
 
         #bottom-bar {
-            pointer-events: auto; width: 92%; max-width: 700px; margin: 0 auto 25px auto;
+            pointer-events: auto; width: 92%; max-width: 800px; margin: 0 auto 25px auto;
             background: linear-gradient(180deg, rgba(0,255,255,0.08) 0%, var(--bg) 100%);
             border: 1px solid rgba(0,255,255,0.4); border-radius: 40px;
-            padding: 12px 25px; display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
             backdrop-filter: blur(25px); box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             gap: 10px;
         }
 
         .btn {
             background: rgba(0,0,0,0.6); border: 1px solid var(--cyan); color: var(--cyan);
-            padding: 12px 18px; border-radius: 30px; cursor: pointer; font-size: 10px;
+            padding: 12px 15px; border-radius: 30px; cursor: pointer; font-size: 10px;
             text-transform: uppercase; font-weight: 800; letter-spacing: 1px; transition: 0.3s;
             white-space: nowrap;
         }
         .btn:hover { box-shadow: 0 0 20px var(--cyan); background: rgba(0,255,255,0.2); }
 
-        /* Maps-style Recenter Button */
         #recenter-btn {
             pointer-events: auto; position: fixed; right: 20px; bottom: 100px;
             width: 45px; height: 45px; border-radius: 50%; background: rgba(0, 0, 0, 0.7);
@@ -68,8 +68,7 @@
             background: var(--bg); border: 1px solid var(--cyan);
             padding: 35px; border-radius: 25px; text-align: center;
             display: none; pointer-events: auto; z-index: 50;
-            box-shadow: 0 0 100px rgba(0,255,255,0.2);
-            width: 80%; max-width: 320px;
+            box-shadow: 0 0 100px rgba(0,255,255,0.2); width: 80%; max-width: 320px;
         }
 
         input[type="text"], input[type="password"] {
@@ -79,84 +78,82 @@
         }
 
         #tooltip {
-            position: fixed; pointer-events: none; display: none;
-            color: var(--cyan); text-shadow: 0 0 15px var(--cyan);
+            position: fixed; pointer-events: none; display: none; color: var(--cyan); text-shadow: 0 0 15px var(--cyan);
             font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px;
         }
 
         #hologram-upload { position: absolute; top: -9999px; left: -9999px; visibility: hidden; pointer-events: none; }
 
+        /* GATEWAY STYLING */
         #auth-gateway {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
             z-index: 9999; display: flex; justify-content: center; align-items: center;
             background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif;
         }
-
         #starfield-matrix-bg { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #001226 0%, #000000 100%); opacity: 0.7; }
-
         .terminal-card {
-            position: relative; width: 90%; max-width: 400px;
-            background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
-            border-radius: 24px; padding: 35px 25px; text-align: center;
-            backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08); z-index: 10001;
+            position: relative; width: 90%; max-width: 400px; background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 24px; padding: 35px 25px; text-align: center; backdrop-filter: blur(20px); box-shadow: 0 0 80px rgba(0, 255, 255, 0.08); z-index: 10001;
         }
-
         .neon-brand { color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: 4px; margin: 0 0 8px 0; text-shadow: 0 0 20px var(--neon-cyan); }
         .matrix-subtitle { color: var(--neon-cyan); font-size: 10px; letter-spacing: 2px; opacity: 0.8; margin-bottom: 25px; line-height: 1.6; }
         .auth-actions { display: flex; flex-direction: column; gap: 12px; }
-        .auth-btn {
-            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3); color: #fff; padding: 14px 20px; 
-            border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .auth-btn { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3); color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .auth-btn:hover { border-color: var(--neon-cyan); background: rgba(0, 255, 255, 0.1); }
         .credential-fields { display: flex; flex-direction: column; width: 100%; }
-        .credential-input {
-            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; 
-            border: 1px solid rgba(0,255,255,0.2)!important; color: white!important; 
-            font-size: 13px!important; text-align: left!important; padding: 12px!important; 
-            margin-bottom: 12px!important; outline: none; border-radius: 8px!important; z-index: 20000; position: relative;
-        }
+        .credential-input { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; border: 1px solid rgba(0,255,255,0.2)!important; color: white!important; font-size: 13px!important; text-align: left!important; padding: 12px!important; margin-bottom: 12px!important; outline: none; border-radius: 8px!important; z-index: 20000; position: relative; }
         .credential-input::placeholder { color: rgba(255,255,255,0.4); text-transform: none; }
         #auth-status-log { margin-top: 20px; font-size: 11px; color: #ff00ff; letter-spacing: 1px; text-transform: uppercase; display: none; }
 
-        /* VIEWPORT (HOLOFRAME) STYLING - TRANSLUCENT AND CENTERED */
+        /* HOLOFRAME VIEWPORT STYLING */
         #holoframe-viewer {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-            background: transparent; z-index: 5000; display: none; justify-content: center; align-items: center;
-            pointer-events: none; /* Let clicks pass through background to the 3D floor */
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: transparent; z-index: 5000; display: none; justify-content: center; align-items: center; pointer-events: none;
         }
         #holoframe-container {
-            width: 90vw; height: 75dvh; max-width: 900px;
-            background: rgba(0, 15, 25, 0.85); border: 1px solid rgba(0, 255, 255, 0.5);
-            border-radius: 15px; display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 0 50px rgba(0,255,255,0.2);
-            pointer-events: auto; /* Catch clicks inside the viewport */
-            backdrop-filter: blur(15px);
+            width: 90vw; height: 75dvh; max-width: 900px; background: rgba(0, 15, 25, 0.85); border: 1px solid rgba(0, 255, 255, 0.5); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,255,255,0.2); pointer-events: auto; backdrop-filter: blur(15px);
         }
-        #holoframe-header {
-            padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3);
-            display: flex; justify-content: space-between; align-items: center; background: rgba(0, 5, 10, 0.9);
-        }
+        #holoframe-header { padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 5, 10, 0.9); }
         #holo-title { color: #0ff; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
-        
-        /* SCROLLBAR STYLING FOR DOCUMENTS */
-        #holoframe-content { 
-            flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; 
-            overflow-y: auto; overflow-x: hidden; flex-direction: column; 
-        }
+        #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow-y: auto; overflow-x: hidden; flex-direction: column; }
         #holoframe-content::-webkit-scrollbar { width: 8px; }
         #holoframe-content::-webkit-scrollbar-track { background: rgba(0,255,255,0.05); }
         #holoframe-content::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 10px; }
-
         #holoframe-content img, #holoframe-content video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
         #holoframe-content iframe { width: 100%; height: 100%; border: none; background: white; border-radius: 8px; }
         #holoframe-content pre { color: var(--cyan); text-align: left; width: 100%; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; }
+        .download-fallback-btn { background: rgba(0,255,255,0.1); border: 1px solid var(--cyan); color: var(--cyan); padding: 15px 30px; border-radius: 30px; cursor: pointer; font-size: 14px; text-transform: uppercase; font-weight: bold; text-decoration: none; margin-top: 15px; display: inline-block; }
+
+        /* ASCENSION (UPGRADE) OVERLAY STYLING */
+        #upgrade-viewer {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0, 3, 8, 0.85); z-index: 6000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(25px); pointer-events: auto;
+        }
+        #upgrade-container {
+            width: 95vw; height: 85dvh; max-width: 1000px; background: rgba(0, 20, 35, 0.6); border: 1px solid rgba(0, 255, 255, 0.4); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 100px rgba(0,255,255,0.15);
+        }
+        #upgrade-content {
+            flex: 1; padding: 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; overflow-y: auto;
+        }
+        #upgrade-content::-webkit-scrollbar { width: 8px; }
+        #upgrade-content::-webkit-scrollbar-track { background: rgba(0,255,255,0.05); }
+        #upgrade-content::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 10px; }
         
-        .download-fallback-btn {
-            background: rgba(0,255,255,0.1); border: 1px solid var(--cyan); color: var(--cyan);
-            padding: 15px 30px; border-radius: 30px; cursor: pointer; font-size: 14px;
-            text-transform: uppercase; font-weight: bold; text-decoration: none; margin-top: 15px; display: inline-block;
+        .tier-card {
+            background: rgba(0,0,0,0.5); border: 1px solid var(--card-color, var(--cyan)); border-radius: 15px; padding: 25px 20px; width: 200px; text-align: center; box-shadow: 0 0 30px rgba(0, 255, 255, 0.05) inset; display: flex; flex-direction: column; align-items: center; transition: 0.3s;
+        }
+        .tier-card:hover { transform: translateY(-5px); box-shadow: 0 0 40px var(--card-color) inset; }
+        .tier-img {
+            width: 120px; height: 120px; object-fit: contain; margin-bottom: 20px;
+            /* Hardware-accelerated CSS Bloom */
+            filter: drop-shadow(0 0 15px var(--card-color)) drop-shadow(0 0 30px var(--card-color));
+            animation: floatHolo 4s ease-in-out infinite;
+        }
+        .tier-title { color: var(--card-color); font-size: 16px; font-weight: 900; letter-spacing: 2px; margin: 0 0 10px 0; text-shadow: 0 0 10px var(--card-color); }
+        .tier-desc { color: white; font-size: 11px; opacity: 0.8; margin: 0 0 20px 0; letter-spacing: 1px; }
+        
+        @keyframes floatHolo {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-10px) scale(1.05); }
+            100% { transform: translateY(0px) scale(1); }
         }
     </style>
 </head>
@@ -165,11 +162,52 @@
     <div id="tooltip">SCANNING...</div>
     <input type="file" id="hologram-upload">
 
+    <div id="upgrade-viewer" onclick="closeUpgrade()">
+        <div id="upgrade-container" onclick="event.stopPropagation()">
+            <div id="holoframe-header">
+                <span id="holo-title" style="color: #ff00ff; text-shadow: 0 0 10px #ff00ff;">ASCENSION PORTAL</span>
+                <button class="btn" style="padding: 5px 10px; border-color: #aaa; color: #aaa;" onclick="closeUpgrade()">✕ CLOSE</button>
+            </div>
+            <div id="upgrade-content">
+                
+                <div class="tier-card" style="--card-color: var(--cyan);">
+                    <img src="assets/acolyte.png" class="tier-img" alt="Acolyte">
+                    <h3 class="tier-title">ACOLYTE</h3>
+                    <p class="tier-desc">50 GB STORAGE<br>Secure Pipeline</p>
+                    <a href="https://buy.stripe.com/fZu9ASeI7b928XaclkcIE05" target="_blank" class="btn" style="width: 100%; border-color: var(--cyan); color: var(--cyan);">ASCEND - $2/mo</a>
+                </div>
+
+                <div class="tier-card" style="--card-color: var(--krypt-green);">
+                    <img src="assets/kryptonian.png" class="tier-img" alt="Kryptonian">
+                    <h3 class="tier-title">KRYPTONIAN</h3>
+                    <p class="tier-desc">250 GB STORAGE<br>Power Matrix</p>
+                    <a href="https://buy.stripe.com/8x28wO0Rhgtm3CQdpocIE06" target="_blank" class="btn" style="width: 100%; border-color: var(--krypt-green); color: var(--krypt-green);">ASCEND - $5/mo</a>
+                </div>
+
+                <div class="tier-card" style="--card-color: var(--elder-purple);">
+                    <img src="assets/elder.png" class="tier-img" alt="Elder">
+                    <h3 class="tier-title">ELDER</h3>
+                    <p class="tier-desc">1 TB STORAGE<br>Deep Archive</p>
+                    <a href="https://buy.stripe.com/00wdR8gQf1ysb5ietscIE07" target="_blank" class="btn" style="width: 100%; border-color: var(--elder-purple); color: var(--elder-purple);">ASCEND - $10/mo</a>
+                </div>
+
+                <div class="tier-card" style="--card-color: var(--god-gold);">
+                    <img src="assets/god.png" class="tier-img" alt="God Tier">
+                    <h3 class="tier-title">GOD TIER</h3>
+                    <p class="tier-desc">5 TB STORAGE<br>Maximum Output</p>
+                    <a href="https://buy.stripe.com/6oU14m9nN7WQ7T62KKcIE08" target="_blank" class="btn" style="width: 100%; border-color: var(--god-gold); color: var(--god-gold);">ASCEND - $25/mo</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <div id="holoframe-viewer">
         <div id="holoframe-container">
             <div id="holoframe-header">
                 <span id="holo-title">FILE VIEWPORT</span>
                 <div>
+                    <button class="btn" style="padding: 5px 10px; margin-right: 10px;" id="holo-download-btn">DOWNLOAD</button>
                     <button class="btn" style="padding: 5px 10px; border-color: #ff00ff; color: #ff00ff;" onclick="closeHoloframe()">✕ CLOSE</button>
                 </div>
             </div>
@@ -182,7 +220,6 @@
         <div class="terminal-card">
             <h1 class="neon-brand">OLYMPUS</h1>
             <p class="matrix-subtitle">PLEASE LOG IN TO ACCESS YOUR VAULT</p>
-            
             <div class="auth-actions">
                 <button class="auth-btn" onclick="executeSecureAuth('google')">🌐 Continue with Google</button>
                 <div style="margin: 10px 0; font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 1px;">OR USE EMAIL</div>
@@ -214,7 +251,7 @@
             </div>
             
             <div id="popup-filled-state" style="display: none; gap: 10px; margin-bottom: 10px;">
-                <button class="btn" style="flex: 1;" onclick="viewActiveCrystal()">View in Viewport</button>
+                <button class="btn" style="flex: 1;" onclick="viewActiveCrystal()">View File</button>
                 <button class="btn" style="flex: 1; border-color: #ff00ff; color: #ff00ff;" onclick="downloadActiveCrystal()">Download</button>
             </div>
 
@@ -226,17 +263,20 @@
 
         <div id="bottom-bar">
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" onclick="spawnCrystal()" style="flex: 1;">Add Crystal</button>
+                    <button class="btn" onclick="shareVault()" style="flex: 1; border-color: #00ff66; color: #00ff66;">Share</button>
+                </div>
                 <button class="btn" onclick="triggerFloorUpload()" style="border-color: #aaa; color: #aaa;">Set Floor Image</button>
             </div>
             
-            <div style="text-align:center; flex:1; padding: 0 15px;">
-                <div id="hud-capacity-text" style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">STORAGE: 0.00 / 2000.00 MB</div>
+            <div style="text-align:center; flex:1; padding: 0 10px;">
+                <div id="hud-capacity-text" style="font-size: 9px; color: var(--cyan); margin-bottom:6px; letter-spacing:1px;">STORAGE: 0.00 / 2.00 GB</div>
                 <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px;">
                     <div id="hud-capacity-bar" style="width:0%; height:100%; background:var(--cyan); transition: width 0.5s;"></div>
                 </div>
             </div>
-            <button class="btn" style="border-color:#ff00ff; color:#ff00ff;">Upgrade</button>
+            <button class="btn" onclick="openUpgrade()" style="border-color:#ff00ff; color:#ff00ff;">Upgrade</button>
         </div>
     </div>
 
@@ -277,7 +317,8 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        ['auth-email', 'auth-password', 'node-name', 'search-input'].forEach(id => {
+        // Prevent UI click-through to 3D scene
+        ['auth-email', 'auth-password', 'node-name', 'search-input', 'upgrade-viewer', 'holoframe-viewer'].forEach(id => {
             const el = document.getElementById(id);
             if(el) { 
                 el.addEventListener('mousedown', e => e.stopPropagation()); 
@@ -290,6 +331,24 @@
         let uploadTarget = null; 
         let activeDownloadUrl = null;
         let activeManifest = null;
+
+        // UI Routing Functions
+        window.openUpgrade = function() { document.getElementById('upgrade-viewer').style.display = 'flex'; };
+        window.closeUpgrade = function() { document.getElementById('upgrade-viewer').style.display = 'none'; };
+        
+        window.shareVault = async function() {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Olympus Personal Fortress',
+                        text: 'Access my secure data vault on Olympus.',
+                        url: window.location.href,
+                    });
+                } catch (err) { console.error('Error sharing:', err); }
+            } else {
+                alert("Native sharing is not supported on this browser. Copy the URL from your address bar.");
+            }
+        };
 
         window.executeSecureAuth = function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
@@ -315,15 +374,15 @@
         };
 
         firebase.auth().onAuthStateChanged(async (user) => {
-            const shield = document.getElementById('auth-gateway');
+            const shieldOverlay = document.getElementById('auth-gateway');
             if (user) {
                 currentUserInstance = user;
-                gsap.to(shield, { opacity: 0, duration: 0.5, onComplete: () => shield.style.display = 'none' });
+                activeUserVaultSegment = `vaults/${user.uid}`;
+                gsap.to(shieldOverlay, { opacity: 0, duration: 0.5, onComplete: () => { shieldOverlay.style.display = 'none'; } });
                 await initializeUserFortressInstance(user.uid);
             } else {
                 currentUserInstance = null;
-                shield.style.display = 'flex';
-                shield.style.opacity = '1';
+                shieldOverlay.style.display = 'flex'; shieldOverlay.style.opacity = '1';
             }
         });
 
@@ -338,11 +397,7 @@
                 } else {
                     const starterMatrix = [];
                     for (let i = 0; i < 12; i++) {
-                        starterMatrix.push({
-                            id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                            name: `Crystal ${i+1}`, color: "#00ffff", height: 4 + Math.random() * 1.5,
-                            fileStorageKey: "", rawSize: 0
-                        });
+                        starterMatrix.push({ id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: `Crystal ${i+1}`, color: "#00ffff", height: 4 + Math.random() * 1.5, fileStorageKey: "", rawSize: 0 });
                     }
                     await docRef.set({ crystalMatrix: starterMatrix });
                     window.rebuildCrystalsFromSchema(starterMatrix);
@@ -467,18 +522,23 @@
             else { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1; }
 
             raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(crystals);
+            const floorHit = raycaster.intersectObject(floorMesh);
+            if (floorHit.length > 0 && raycaster.intersectObjects(crystals).length === 0) {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err => {});
+                else if (document.exitFullscreen) document.exitFullscreen();
+                return;
+            }
 
+            const hits = raycaster.intersectObjects(crystals);
             if (hits.length > 0) {
-                const obj = hits[0].object;
-                selectedNode = obj;
+                selectedNode = hits[0].object;
                 gsap.to(selectedNode.position, { y: 3.5, duration: 0.4, ease: "back.out" });
                 
                 document.getElementById('popup').style.display = 'block';
                 document.getElementById('node-name').value = selectedNode.userData.name;
                 document.getElementById('color-picker').value = selectedNode.userData.color;
                 
-                if (obj.userData.fileStorageKey) {
+                if (selectedNode.userData.fileStorageKey) {
                     document.getElementById('popup-empty-state').style.display = 'none';
                     document.getElementById('popup-filled-state').style.display = 'flex';
                 } else {
@@ -507,8 +567,7 @@
                     });
                 }
             }
-            document.getElementById('popup').style.display = 'none';
-            selectedNode = null;
+            document.getElementById('popup').style.display = 'none'; selectedNode = null;
         }
 
         window.spawnCrystal = function() {
@@ -521,7 +580,6 @@
             if (currentUserInstance) db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: firebase.firestore.FieldValue.arrayUnion(node.userData) });
         }
 
-        // DIRECT FIREBASE STORAGE UPLOAD
         async function stagePayloadCompression(file) {
             const CHUNK_SIZE = 64 * 1024; const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
             const zip = new JSZip();
@@ -557,7 +615,6 @@
             } catch (err) { console.error("Upload error:", err); tt.style.display = 'none'; alert("Upload failed. Check Firebase Storage rules."); }
         }
 
-        // PREPARE FILE FOR VIEWING OR DOWNLOADING
         async function extractCrystalData() {
             const storageKey = selectedNode.userData.fileStorageKey;
             const tt = document.getElementById('tooltip'); tt.style.display = 'block'; tt.innerText = "DECRYPTING...";
@@ -604,11 +661,14 @@
         };
 
         window.closeHoloframe = function() { document.getElementById('holoframe-viewer').style.display = "none"; }
+        
         window.calculateHUDQuota = function(matrix) {
             let totalBytes = 0; matrix.forEach(n => totalBytes += (n.rawSize || 0));
+            // Fixed base tier limit assumption at 2GB, future integration will update this dynamically based on Stripe sub
             document.getElementById('hud-capacity-text').innerText = `STORAGE: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
             document.getElementById('hud-capacity-bar').style.width = `${Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100)}%`;
         };
+        
         function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
         function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
     </script>

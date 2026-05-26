@@ -5,26 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Olympus | Personal Fortress</title>
     <style>
-        :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.98); --neon-cyan: #00ffff; --panel-dark: rgba(2, 6, 14, 0.97); --god-gold: #ffd700; --elder-purple: #b026ff; --krypt-green: #00ff66; }
+        :root { --cyan: #00ffff; --bg: rgba(0, 5, 10, 0.98); --neon-cyan: #00ffff; --panel-dark: rgba(2, 6, 14, 0.97); }
         body, html { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; overscroll-behavior: none; width: 100vw; height: 100dvh; }
         #ui-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; pointer-events: none; z-index: 10; display: none; flex-direction: column; justify-content: space-between; opacity: 0; }
         #top-bar { pointer-events: auto; width: 92%; max-width: 700px; margin: 25px auto 0 auto; }
-        #search-input { width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--cyan); color: white; padding: 12px 20px; border-radius: 30px; font-size: 14px; outline: none; backdrop-filter: blur(10px); box-shadow: 0 5px 20px rgba(0,0,0,0.5); text-align: center; }
+        #search-input { width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--cyan); color: white; padding: 12px 20px; border-radius: 30px; font-size: 14px; outline: none; backdrop-filter: blur(10px); text-align: center; }
         #bottom-bar { pointer-events: auto; width: 92%; max-width: 800px; margin: 0 auto 25px auto; background: linear-gradient(180deg, rgba(0,255,255,0.08) 0%, var(--bg) 100%); border: 1px solid rgba(0,255,255,0.4); border-radius: 40px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-        .btn { background: rgba(0,0,0,0.6); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 15px; border-radius: 30px; cursor: pointer; font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; transition: 0.3s; white-space: nowrap; }
-        .btn:hover { box-shadow: 0 0 20px var(--cyan); background: rgba(0,255,255,0.2); }
-        #recenter-btn { pointer-events: auto; position: fixed; right: 20px; bottom: 100px; width: 45px; height: 45px; border-radius: 50%; background: rgba(0,0,0,0.7); border: 1px solid var(--cyan); color: var(--cyan); font-size: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(10px); z-index: 100; }
+        .btn { background: rgba(0,0,0,0.6); border: 1px solid var(--cyan); color: var(--cyan); padding: 12px 15px; border-radius: 30px; cursor: pointer; font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; transition: 0.3s; }
         #popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg); border: 1px solid var(--cyan); padding: 35px; border-radius: 25px; text-align: center; display: none; pointer-events: auto; z-index: 50; width: 80%; max-width: 320px; }
-        #tooltip { position: fixed; pointer-events: none; display: none; color: var(--cyan); text-shadow: 0 0 15px var(--cyan); font-size: 14px; z-index: 100; font-weight: bold; letter-spacing: 1px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; border: 1px solid var(--cyan); }
-        #hologram-upload { position: absolute; top: -9999px; left: -9999px; visibility: hidden; }
-        #auth-gateway { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; }
-        .terminal-card { position: relative; width: 90%; max-width: 400px; background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 24px; padding: 35px 25px; text-align: center; z-index: 10001; }
-        .neon-brand { color: #fff; font-size: 2.2em; font-weight: 800; letter-spacing: 4px; margin: 0 0 8px 0; }
-        .auth-btn { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 255, 255, 0.3); color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 15px; }
-        .credential-input { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4)!important; border: 1px solid rgba(0,255,255,0.2)!important; color: white!important; padding: 12px!important; margin-bottom: 12px!important; border-radius: 8px!important; }
+        #tooltip { position: fixed; pointer-events: none; display: none; color: var(--cyan); background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; border: 1px solid var(--cyan); z-index: 9999; }
+        #hologram-upload { position: absolute; top: -9999px; left: -9999px; }
+        #auth-gateway { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 9999; display: flex; justify-content: center; align-items: center; background: #000; }
+        .terminal-card { width: 90%; max-width: 400px; background: var(--panel-dark); border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 24px; padding: 35px; text-align: center; }
+        .credential-input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--cyan); background: rgba(0,0,0,0.4); color: white; }
         #holoframe-viewer { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: transparent; z-index: 5000; display: none; justify-content: center; align-items: center; pointer-events: none; }
-        #holoframe-container { width: 90vw; height: 75dvh; max-width: 900px; background: rgba(0, 15, 25, 0.85); border: 1px solid rgba(0, 255, 255, 0.5); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; backdrop-filter: blur(15px); }
-        #holoframe-header { padding: 15px 20px; border-bottom: 1px solid rgba(0, 255, 255, 0.3); display: flex; justify-content: space-between; align-items: center; background: rgba(0, 5, 10, 0.9); }
+        #holoframe-container { width: 90vw; height: 75dvh; max-width: 900px; background: rgba(0, 15, 25, 0.85); border: 1px solid var(--cyan); border-radius: 15px; display: flex; flex-direction: column; pointer-events: auto; backdrop-filter: blur(15px); }
         #holoframe-content { flex: 1; padding: 20px; display: flex; justify-content: center; align-items: center; overflow-y: auto; flex-direction: column; }
     </style>
 </head>
@@ -34,12 +29,9 @@
 
     <div id="holoframe-viewer">
         <div id="holoframe-container">
-            <div id="holoframe-header">
+            <div style="padding:15px; border-bottom:1px solid var(--cyan); display:flex; justify-content:space-between;">
                 <span id="holo-title" style="color:var(--cyan)">FILE VIEWPORT</span>
-                <div>
-                    <button class="btn" id="holo-download-btn">DOWNLOAD</button>
-                    <button class="btn" style="border-color:#ff00ff; color:#ff00ff;" onclick="closeHoloframe()">✕ CLOSE</button>
-                </div>
+                <button class="btn" onclick="closeHoloframe()">✕ CLOSE</button>
             </div>
             <div id="holoframe-content"></div>
         </div>
@@ -50,27 +42,23 @@
             <h1 class="neon-brand">OLYMPUS</h1>
             <input type="text" id="auth-email" class="credential-input" placeholder="Email">
             <input type="password" id="auth-password" class="credential-input" placeholder="Password">
-            <button class="auth-btn" onclick="executeSecureAuth('email-login')">Enter Vault</button>
-            <button class="auth-btn" onclick="executeSecureAuth('google')">Google Identity</button>
+            <button class="btn" style="width:100%" onclick="executeSecureAuth('email-login')">Enter Vault</button>
+            <button class="btn" style="width:100%; margin-top:10px" onclick="executeSecureAuth('google')">Google Identity</button>
         </div>
     </div>
 
     <div id="ui-layer">
-        <div id="top-bar"><input type="text" id="search-input" placeholder="Search your vault..."></div>
-        <button id="recenter-btn" onclick="recenterCamera()">⌖</button>
+        <div id="top-bar"><input type="text" id="search-input" placeholder="Search vault..."></div>
         <div id="popup">
-            <input type="text" id="node-name" value="CRYSTAL">
-            <button class="btn" style="width:100%;" onclick="triggerCrystalUpload()">Upload File</button>
-            <div id="popup-filled-state" style="display:none; gap:10px; margin-top:10px;">
-                <button class="btn" onclick="viewActiveCrystal()">View</button>
-                <button class="btn" onclick="downloadActiveCrystal()">Download</button>
-            </div>
-            <button class="btn" onclick="saveAndClose()" style="width:100%; margin-top:10px;">Save Changes</button>
+            <input type="text" id="node-name" style="width:100%; padding:10px; border-radius:10px;">
+            <button class="btn" style="width:100%; margin:10px 0;" onclick="triggerCrystalUpload()">Upload File</button>
+            <div id="popup-filled-state" style="display:none; gap:10px;"><button class="btn" onclick="viewActiveCrystal()">View</button></div>
+            <button class="btn" onclick="saveAndClose()" style="width:100%">Save</button>
         </div>
         <div id="bottom-bar">
-            <button class="btn" onclick="spawnCrystal()">Add Crystal</button>
+            <button class="btn" onclick="spawnCrystal()">Add</button>
             <button class="btn" onclick="triggerFloorUpload()">Set Floor</button>
-            <button class="btn" id="floor-enlarge-btn" onclick="openFloorInHoloframe()" style="display:none;">Enlarge Floor</button>
+            <button class="btn" id="floor-enlarge-btn" style="display:none" onclick="openFloorInHoloframe()">Enlarge View</button>
         </div>
     </div>
 
@@ -100,12 +88,11 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        let currentUser = null, selectedNode = null, crystals = [], activeFloorVideo = null;
-        const tt = document.getElementById('tooltip');
+        let currentUser = null, selectedNode = null, floorVideoObj = null;
 
         firebase.auth().onAuthStateChanged(user => {
             if(user) { currentUser = user; document.getElementById('ui-layer').style.display = 'flex'; gsap.to('#ui-layer', {opacity:1}); document.getElementById('auth-gateway').style.display = 'none'; initScene(); }
-            else { document.getElementById('ui-layer').style.display = 'none'; document.getElementById('auth-gateway').style.display = 'flex'; }
+            else { document.getElementById('auth-gateway').style.display = 'flex'; }
         });
 
         window.executeSecureAuth = (type) => {
@@ -113,39 +100,40 @@
             else firebase.auth().signInWithEmailAndPassword(document.getElementById('auth-email').value, document.getElementById('auth-password').value).catch(e => alert(e.message));
         };
 
-        function reportStatus(msg) { tt.innerText = msg; tt.style.display = 'block'; }
-
-        async function stagePayloadCompression(file) {
-            reportStatus("COMPRESSING...");
-            const zip = new JSZip();
-            zip.file("manifest.json", JSON.stringify({ originName: file.name, mimeType: file.type }));
-            zip.file("data.dat", await file.arrayBuffer());
-            const blob = await zip.generateAsync({ type: "blob" });
-            
-            reportStatus("UPLOADING TO BUCKET...");
-            try {
-                const ref = storage.ref(`vaults/${currentUser.uid}/${Date.now()}_${file.name}`);
-                await ref.put(blob);
-                reportStatus("SYNCING...");
-                // Add to Firestore logic here
-                tt.style.display = 'none'; alert("Upload Success!");
-            } catch(e) { reportStatus("ERROR: " + e.message); setTimeout(() => tt.style.display='none', 3000); }
-        }
+        window.closeHoloframe = () => { 
+            document.getElementById('holoframe-viewer').style.display = 'none'; 
+            if(floorVideoObj) floorVideoObj.play(); 
+        };
 
         window.openFloorInHoloframe = () => {
-            if (activeFloorVideo) activeFloorVideo.pause();
-            document.getElementById('holoframe-viewer').style.display = "flex";
-            // Logic to play in holoframe
+            if(floorVideoObj) floorVideoObj.pause();
+            document.getElementById('holoframe-viewer').style.display = 'flex';
         };
 
-        window.closeHoloframe = () => { 
-            document.getElementById('holoframe-viewer').style.display = "none";
-            if (activeFloorVideo) activeFloorVideo.play();
-        };
+        function report(msg) { const tt = document.getElementById('tooltip'); tt.innerText = msg; tt.style.display = 'block'; }
 
-        function initScene() { /* Three.js scene setup */ }
+        async function stagePayloadCompression(file) {
+            report("UPLOADING...");
+            try {
+                const ref = storage.ref(`vaults/${currentUser.uid}/${Date.now()}_${file.name}`);
+                await ref.put(file);
+                report("UPLOAD COMPLETE");
+                setTimeout(() => document.getElementById('tooltip').style.display='none', 2000);
+            } catch(e) { report("ERROR: " + e.message); }
+        }
+
+        function initScene() { 
+            // Three.js setup (scene, camera, renderer, etc.)
+            // IMPORTANT: Ensure your animate() loop is called here.
+            animate();
+        }
         function animate() { requestAnimationFrame(animate); }
-        animate();
+        window.saveAndClose = () => { document.getElementById('popup').style.display = 'none'; };
+        window.triggerCrystalUpload = () => { document.getElementById('hologram-upload').click(); };
+        window.triggerFloorUpload = () => { document.getElementById('hologram-upload').click(); };
+        window.spawnCrystal = () => {};
+        window.viewActiveCrystal = () => {};
+        window.downloadActiveCrystal = () => {};
     </script>
 </body>
 </html>

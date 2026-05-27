@@ -317,6 +317,7 @@
         let activeFloorMediaType = null;
         let activeFloorFileName = null;
         let floorVideoObj = null;
+        let sceneInitialized = false;
 
         window.reportStatus = function(msg) {
             console.log("STATUS UPDATE:", msg);
@@ -355,10 +356,16 @@
 
                 if (routeType === 'email-login') {
                     if (statusLog) statusLog.innerText = "Logging in...";
-                    firebase.auth().signInWithEmailAndPassword(email, password).catch(err => alert("Invalid credentials."));
+                    firebase.auth().signInWithEmailAndPassword(email, password).catch(err => {
+                        alert("Access Denied: " + err.message);
+                        statusLog.style.display = "none";
+                    });
                 } else if (routeType === 'email-register') {
                     if (statusLog) statusLog.innerText = "Creating account...";
-                    firebase.auth().createUserWithEmailAndPassword(email, password).catch(err => alert(err.message));
+                    firebase.auth().createUserWithEmailAndPassword(email, password).catch(err => {
+                        alert("Registration Error: " + err.message);
+                        statusLog.style.display = "none";
+                    });
                 }
             }
         };
@@ -406,10 +413,9 @@
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [], crystalCount = 12, selectedNode = null;
         let floorMesh, carouselGroup, innerDome, outerDome;
-        let sceneInitialized = false;
 
         function initScene() {
-            if(sceneInitialized) return;
+            if (sceneInitialized) return;
             sceneInitialized = true;
             console.log("Igniting 3D Engine...");
 
@@ -479,8 +485,8 @@
                         floorVideoObj.muted = false; 
                         floorVideoObj.play().catch(err => {
                             floorVideoObj.muted = true; floorVideoObj.play();
-                            reportStatus("BROWSER MUTED AUDIO. ENLARGE TO HEAR.");
-                            setTimeout(hideStatus, 4000);
+                            window.reportStatus("BROWSER MUTED AUDIO. ENLARGE TO HEAR.");
+                            setTimeout(window.hideStatus, 4000);
                         });
                         floorMesh.material.map = new THREE.VideoTexture(floorVideoObj);
                     } else { 
@@ -494,7 +500,6 @@
                 uploadTarget = null; e.target.value = ""; 
             });
 
-            // Start animation loop once initialized
             animate();
         }
 
@@ -573,7 +578,7 @@
                     selectedNode.material.emissive.set(ev.target.value); selectedNode.material.color.set(ev.target.value); selectedNode.userData.color = ev.target.value;
                 };
             } else { 
-                if (document.getElementById('popup').style.display === 'block') saveAndClose(); 
+                if (document.getElementById('popup').style.display === 'block') window.saveAndClose(); 
             }
         }
 
@@ -581,6 +586,7 @@
             if(selectedNode) {
                 selectedNode.userData.name = document.getElementById('node-name').value;
                 gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
+                
                 if (currentUserInstance) {
                     db.collection("fortresses").doc(currentUserInstance.uid).update({ 
                         crystalMatrix: crystals.map(c => c.userData) 
@@ -597,54 +603,67 @@
             node.position.set(Math.cos(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11, node.geometry.parameters.height/2, Math.sin(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11);
             node.userData = { id: `node_${Date.now()}`, name: `Crystal ${crystalCount}`, color: '#00ffff', height: node.geometry.parameters.height, fileStorageKey: "", rawSize: 0, index: crystalCount - 1 };
             carouselGroup.add(node); crystals.push(node);
-            if (currentUserInstance) db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: firebase.firestore.FieldValue.arrayUnion(node.userData) });
+            
+            if (currentUserInstance) {
+                db.collection("fortresses").doc(currentUserInstance.uid).update({ 
+                    crystalMatrix: crystals.map(c => c.userData) 
+                }).catch(console.error);
+            }
         }
 
         async function stagePayloadCompression(file) {
-            const CHUNK_SIZE = 64 * 1024; const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            window.reportStatus("UPLOADING...");
+            
             const zip = new JSZip();
-            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: totalChunks, timestamp: Date.now(), nodeId: selectedNode.userData.id };
+            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: 1, timestamp: Date.now(), nodeId: selectedNode.userData.id };
             zip.file("manifest.json", JSON.stringify(manifest));
 
-            let currentByteBound = 0;
-            for (let i = 0; i < totalChunks; i++) {
-                zip.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`, await file.slice(currentByteBound, currentByteBound + CHUNK_SIZE).arrayBuffer(), { binary: true });
-                currentByteBound += CHUNK_SIZE;
-            }
+            // Sharding removed, relying on standard compressionless blob packaging for speed.
+            zip.file(`fragments/shard_000000.dat`, await file.arrayBuffer(), { binary: true });
 
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
-            const compressedZipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
+            const compressedZipBlob = await zip.generateAsync({ type: "blob" });
             
             document.getElementById('popup').style.display = 'none';
-            reportStatus("UPLOADING TO BUCKET...");
+            window.reportStatus("UPLOADING TO BUCKET...");
 
             try {
                 const storagePath = `vaults/${currentUserInstance.uid}/${manifest.nodeId}_core.zip`;
                 await storage.ref(storagePath).put(compressedZipBlob);
                 
-                reportStatus("SYNCING METADATA...");
+                window.reportStatus("SYNCING METADATA...");
                 
                 db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
                     let matrix = doc.data().crystalMatrix;
-                    matrix[selectedNode.userData.index].fileStorageKey = storagePath;
-                    matrix[selectedNode.userData.index].name = manifest.originName;
-                    matrix[selectedNode.userData.index].rawSize = manifest.rawSizeBytes;
-                    db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                        window.rebuildCrystalsFromSchema(matrix); window.calculateHUDQuota(matrix); 
-                        hideStatus();
-                        saveAndClose();
-                    });
+                    let targetIdx = matrix.findIndex(c => c.id === selectedNode.userData.id);
+                    
+                    if (targetIdx !== -1) {
+                        matrix[targetIdx].fileStorageKey = storagePath;
+                        matrix[targetIdx].name = manifest.originName;
+                        matrix[targetIdx].rawSize = manifest.rawSizeBytes;
+                        db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
+                            window.rebuildCrystalsFromSchema(matrix); window.calculateHUDQuota(matrix); 
+                            window.hideStatus();
+                            window.saveAndClose();
+                        });
+                    } else {
+                        throw new Error("Crystal sync misalignment.");
+                    }
+                }).catch(err => {
+                    console.error("Sync Error:", err);
+                    window.reportStatus("SYNC ERROR. TRY AGAIN.");
+                    setTimeout(window.hideStatus, 3000);
                 });
             } catch (err) { 
                 console.error("Upload error:", err); 
-                hideStatus();
-                alert("Upload failed. Ensure Firebase Storage Rules are published correctly."); 
+                window.reportStatus("UPLOAD FAILED");
+                setTimeout(window.hideStatus, 3000);
             }
         }
 
         async function extractCrystalData() {
             const storageKey = selectedNode.userData.fileStorageKey;
-            reportStatus("DECRYPTING...");
+            window.reportStatus("DECRYPTING...");
             try {
                 const downloadUrl = await storage.ref(storageKey).getDownloadURL();
                 const cloudStream = await fetch(downloadUrl);
@@ -657,9 +676,9 @@
                 }
                 const reconstructedBlob = new Blob(compiledBuffers, { type: activeManifest.mimeType });
                 activeDownloadUrl = URL.createObjectURL(reconstructedBlob);
-                hideStatus();
+                window.hideStatus();
                 return true;
-            } catch (err) { console.error("Extraction failed:", err); reportStatus("ERROR EXTRACTING"); setTimeout(hideStatus, 2000); return false; }
+            } catch (err) { console.error("Extraction failed:", err); window.reportStatus("ERROR EXTRACTING"); setTimeout(window.hideStatus, 2000); return false; }
         }
 
         window.viewActiveCrystal = async function() {

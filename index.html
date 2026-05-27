@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Olympus | Fortress of Solitude</title>
+    <title>Olympus | Personal Fortress</title>
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -318,15 +318,17 @@
         let activeFloorFileName = null;
         let floorVideoObj = null;
 
-        function reportStatus(msg) {
+        window.reportStatus = function(msg) {
+            console.log("STATUS UPDATE:", msg);
             const tt = document.getElementById('tooltip');
             tt.innerText = msg;
             tt.style.display = 'block';
             tt.style.left = '50%';
             tt.style.top = '10%';
             tt.style.transform = 'translateX(-50%)';
-        }
-        function hideStatus() { document.getElementById('tooltip').style.display = 'none'; }
+        };
+
+        window.hideStatus = function() { document.getElementById('tooltip').style.display = 'none'; };
 
         window.openUpgrade = function() { document.getElementById('upgrade-viewer').style.display = 'flex'; };
         window.closeUpgrade = function() { document.getElementById('upgrade-viewer').style.display = 'none'; };
@@ -373,6 +375,7 @@
                     gsap.to(uiLayer, {opacity: 1, duration: 0.5});
                 }});
                 await initializeUserFortressInstance(user.uid);
+                initScene();
             } else {
                 currentUserInstance = null;
                 uiLayer.style.display = 'none'; uiLayer.style.opacity = '0';
@@ -403,8 +406,13 @@
         let scene, camera, renderer, composer, controls, raycaster, mouse;
         let crystals = [], crystalCount = 12, selectedNode = null;
         let floorMesh, carouselGroup, innerDome, outerDome;
+        let sceneInitialized = false;
 
-        function init() {
+        function initScene() {
+            if(sceneInitialized) return;
+            sceneInitialized = true;
+            console.log("Igniting 3D Engine...");
+
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
             camera.position.set(0, 15, 35); 
@@ -485,6 +493,9 @@
                 }
                 uploadTarget = null; e.target.value = ""; 
             });
+
+            // Start animation loop once initialized
+            animate();
         }
 
         window.recenterCamera = function() {
@@ -494,7 +505,7 @@
 
         window.openFloorInHoloframe = function() {
             if (!activeFloorMediaUrl) return;
-            if (floorVideoObj) floorVideoObj.pause(); // Pause the floor video
+            if (floorVideoObj) floorVideoObj.pause(); 
             const meta = { originName: activeFloorFileName || "Floor Media", mimeType: activeFloorMediaType };
             activeDownloadUrl = activeFloorMediaUrl;
             activeManifest = meta;
@@ -523,8 +534,7 @@
             const hits = raycaster.intersectObjects(crystals);
             const tt = document.getElementById('tooltip');
             
-            // Only show hover tooltip if we aren't displaying a persistent status message
-            if (tt.innerText === "UPLOADING..." || tt.innerText === "DECRYPTING..." || tt.innerText.includes("MUTED")) return;
+            if (tt.innerText === "UPLOADING..." || tt.innerText === "DECRYPTING..." || tt.innerText === "UPLOADING TO BUCKET..." || tt.innerText === "SYNCING METADATA...") return;
 
             if (hits.length > 0 && !selectedNode) {
                 tt.style.display = 'block'; tt.style.left = `${e.clientX + 20}px`; tt.style.top = `${e.clientY + 20}px`; tt.style.transform = 'none';
@@ -688,7 +698,7 @@
 
         window.closeHoloframe = function() { 
             document.getElementById('holoframe-viewer').style.display = "none"; 
-            if (floorVideoObj) floorVideoObj.play(); // Resume floor video if it was playing
+            if (floorVideoObj) floorVideoObj.play(); 
         }
         
         window.calculateHUDQuota = function(matrix) {
@@ -697,10 +707,6 @@
             document.getElementById('hud-capacity-bar').style.width = `${Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100)}%`;
         };
         
-        // ENGINE IGNITION
-        init();
-        animate(); 
-
         function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
         function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
     </script>

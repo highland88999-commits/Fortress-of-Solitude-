@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Olympus | Personal Fortress</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -39,7 +42,9 @@
         #search-input::placeholder { color: rgba(0, 255, 255, 0.5); text-transform: uppercase; font-size: 12px;}
 
         #bottom-bar {
-            pointer-events: auto; width: 92%; max-width: 800px; margin: 0 auto 25px auto;
+            pointer-events: auto; width: 92%; max-width: 800px; 
+            /* Recalibrated margin to clear the Multiverse Tracker */
+            margin: 0 auto 65px auto;
             background: linear-gradient(180deg, rgba(0,255,255,0.08) 0%, var(--bg) 100%);
             border: 1px solid rgba(0,255,255,0.4); border-radius: 40px;
             padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
@@ -56,7 +61,9 @@
         .btn:hover { box-shadow: 0 0 20px var(--cyan); background: rgba(0,255,255,0.2); }
 
         #recenter-btn {
-            pointer-events: auto; position: fixed; right: 20px; bottom: 100px;
+            pointer-events: auto; position: fixed; right: 20px; 
+            /* Recalibrated bottom property to clear tracker */
+            bottom: 120px;
             width: 45px; height: 45px; border-radius: 50%; background: rgba(0, 0, 0, 0.7);
             border: 1px solid var(--cyan); color: var(--cyan); font-size: 18px;
             display: flex; justify-content: center; align-items: center;
@@ -143,6 +150,21 @@
         .tier-title { color: var(--card-color); font-size: 16px; font-weight: 900; letter-spacing: 2px; margin: 0 0 10px 0; text-shadow: 0 0 10px var(--card-color); }
         .tier-desc { color: white; font-size: 11px; opacity: 0.8; margin: 0 0 20px 0; letter-spacing: 1px; }
         @keyframes floatHolo { 0% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-10px) scale(1.05); } 100% { transform: translateY(0px) scale(1); } }
+
+        /* Multiverse Tracker CSS Integration */
+        .cyber-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; padding: 12px 0;
+            background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(4px);
+            border-top: 1px solid rgba(0, 255, 255, 0.15); z-index: 10000;
+            font-family: 'Courier New', Courier, monospace; pointer-events: none;
+        }
+        .visit-count {
+            color: #00ffff; font-size: 0.75rem; font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.8), 0 0 15px rgba(0, 255, 255, 0.4);
+            letter-spacing: 1.5px; text-transform: uppercase; pointer-events: auto;
+        }
+        .loading { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
@@ -262,6 +284,12 @@
             <button class="btn" onclick="openUpgrade()" style="border-color:#ff00ff; color:#ff00ff;">Upgrade</button>
         </div>
     </div>
+
+    <footer class="cyber-footer">
+        <div class="visit-count" id="counter-display">
+            UPLINK ESTABLISHING <span class="loading">...</span>
+        </div>
+    </footer>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -567,167 +595,4 @@
                 document.getElementById('color-picker').value = selectedNode.userData.color;
                 
                 if (selectedNode.userData.fileStorageKey) {
-                    document.getElementById('popup-empty-state').style.display = 'none';
-                    document.getElementById('popup-filled-state').style.display = 'flex';
-                } else {
-                    document.getElementById('popup-empty-state').style.display = 'block';
-                    document.getElementById('popup-filled-state').style.display = 'none';
-                }
-
-                document.getElementById('color-picker').oninput = (ev) => {
-                    selectedNode.material.emissive.set(ev.target.value); selectedNode.material.color.set(ev.target.value); selectedNode.userData.color = ev.target.value;
-                };
-            } else { 
-                if (document.getElementById('popup').style.display === 'block') window.saveAndClose(); 
-            }
-        }
-
-        window.saveAndClose = function() {
-            if(selectedNode) {
-                selectedNode.userData.name = document.getElementById('node-name').value;
-                gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
-                
-                if (currentUserInstance) {
-                    db.collection("fortresses").doc(currentUserInstance.uid).update({ 
-                        crystalMatrix: crystals.map(c => c.userData) 
-                    }).catch(console.error);
-                }
-            }
-            document.getElementById('popup').style.display = 'none'; selectedNode = null;
-        }
-
-        window.spawnCrystal = function() {
-            crystalCount++;
-            crystals.forEach((c, i) => { gsap.to(c.position, { x: Math.cos((i / crystalCount) * Math.PI * 2)*11, z: Math.sin((i / crystalCount) * Math.PI * 2)*11, duration: 1 }); });
-            const node = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 4 + Math.random() * 1.5, 6), new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('assets/1776228269143.png'), emissive: 0x00ffff, emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 }));
-            node.position.set(Math.cos(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11, node.geometry.parameters.height/2, Math.sin(((crystalCount - 1) / crystalCount) * Math.PI * 2)*11);
-            node.userData = { id: `node_${Date.now()}`, name: `Crystal ${crystalCount}`, color: '#00ffff', height: node.geometry.parameters.height, fileStorageKey: "", rawSize: 0, index: crystalCount - 1 };
-            carouselGroup.add(node); crystals.push(node);
-            
-            if (currentUserInstance) {
-                db.collection("fortresses").doc(currentUserInstance.uid).update({ 
-                    crystalMatrix: crystals.map(c => c.userData) 
-                }).catch(console.error);
-            }
-        }
-
-        async function stagePayloadCompression(file) {
-            window.reportStatus("UPLOADING...");
-            
-            const zip = new JSZip();
-            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: 1, timestamp: Date.now(), nodeId: selectedNode.userData.id };
-            zip.file("manifest.json", JSON.stringify(manifest));
-
-            // Sharding removed, relying on standard compressionless blob packaging for speed.
-            zip.file(`fragments/shard_000000.dat`, await file.arrayBuffer(), { binary: true });
-
-            gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
-            const compressedZipBlob = await zip.generateAsync({ type: "blob" });
-            
-            document.getElementById('popup').style.display = 'none';
-            window.reportStatus("UPLOADING TO BUCKET...");
-
-            try {
-                const storagePath = `vaults/${currentUserInstance.uid}/${manifest.nodeId}_core.zip`;
-                await storage.ref(storagePath).put(compressedZipBlob);
-                
-                window.reportStatus("SYNCING METADATA...");
-                
-                db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
-                    let matrix = doc.data().crystalMatrix;
-                    let targetIdx = matrix.findIndex(c => c.id === selectedNode.userData.id);
-                    
-                    if (targetIdx !== -1) {
-                        matrix[targetIdx].fileStorageKey = storagePath;
-                        matrix[targetIdx].name = manifest.originName;
-                        matrix[targetIdx].rawSize = manifest.rawSizeBytes;
-                        db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                            window.rebuildCrystalsFromSchema(matrix); window.calculateHUDQuota(matrix); 
-                            window.hideStatus();
-                            window.saveAndClose();
-                        });
-                    } else {
-                        throw new Error("Crystal sync misalignment.");
-                    }
-                }).catch(err => {
-                    console.error("Sync Error:", err);
-                    window.reportStatus("SYNC ERROR. TRY AGAIN.");
-                    setTimeout(window.hideStatus, 3000);
-                });
-            } catch (err) { 
-                console.error("Upload error:", err); 
-                window.reportStatus("UPLOAD FAILED");
-                setTimeout(window.hideStatus, 3000);
-            }
-        }
-
-        async function extractCrystalData() {
-            const storageKey = selectedNode.userData.fileStorageKey;
-            window.reportStatus("DECRYPTING...");
-            try {
-                const downloadUrl = await storage.ref(storageKey).getDownloadURL();
-                const cloudStream = await fetch(downloadUrl);
-                const unzipped = await JSZip.loadAsync(await cloudStream.blob());
-                activeManifest = JSON.parse(await unzipped.file("manifest.json").async("string"));
-                
-                let compiledBuffers = [];
-                for (let i = 0; i < activeManifest.totalFragments; i++) {
-                    compiledBuffers.push(await unzipped.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`).async("arraybuffer"));
-                }
-                const reconstructedBlob = new Blob(compiledBuffers, { type: activeManifest.mimeType });
-                activeDownloadUrl = URL.createObjectURL(reconstructedBlob);
-                window.hideStatus();
-                return true;
-            } catch (err) { console.error("Extraction failed:", err); window.reportStatus("ERROR EXTRACTING"); setTimeout(window.hideStatus, 2000); return false; }
-        }
-
-        window.viewActiveCrystal = async function() {
-            document.getElementById('popup').style.display = 'none';
-            if(await extractCrystalData()) renderHoloframeContent(activeDownloadUrl, activeManifest);
-        };
-
-        window.downloadActiveCrystal = async function() {
-            document.getElementById('popup').style.display = 'none';
-            if(await extractCrystalData()) {
-                const a = document.createElement('a'); a.href = activeDownloadUrl; a.download = activeManifest.originName; a.click();
-            }
-        };
-
-        function renderHoloframeContent(url, meta) {
-            const viewer = document.getElementById('holoframe-viewer');
-            const target = document.getElementById('holoframe-content');
-            target.innerHTML = ""; 
-            viewer.style.display = "flex";
-            const mime = meta.mimeType || "";
-            document.getElementById('holo-title').innerText = meta.originName || "FILE VIEWPORT";
-
-            if (mime.startsWith('image/')) { const img = document.createElement('img'); img.src = url; target.appendChild(img); } 
-            else if (mime.startsWith('video/')) { const vid = document.createElement('video'); vid.src = url; vid.controls = true; vid.autoplay = true; target.appendChild(vid); } 
-            else if (mime.startsWith('audio/')) { const aud = document.createElement('audio'); aud.src = url; aud.controls = true; aud.autoplay = true; target.appendChild(aud); } 
-            else if (mime === 'application/pdf') { 
-                target.innerHTML = `<div style="text-align: center; color: white;"><h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3><p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">PDF files cannot be reliably rendered in the mobile 3D viewport.</p><a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download PDF</a></div>`; 
-            } 
-            else if (mime.startsWith('text/')) { fetch(url).then(res => res.text()).then(text => { const pre = document.createElement('pre'); pre.textContent = text; target.appendChild(pre); }); } 
-            else { target.innerHTML = `<div style="text-align: center; color: white;"><h3 style="color: var(--cyan); margin-bottom: 10px;">${meta.originName}</h3><p style="font-size: 12px; opacity: 0.7; margin-bottom: 25px;">This file type cannot be previewed. Please download.</p><a href="${url}" download="${meta.originName}" class="download-fallback-btn">Download File</a></div>`; }
-            
-            document.getElementById('holo-download-btn').onclick = () => {
-                const a = document.createElement('a'); a.href = url; a.download = meta.originName; a.click();
-            };
-        }
-
-        window.closeHoloframe = function() { 
-            document.getElementById('holoframe-viewer').style.display = "none"; 
-            if (floorVideoObj) floorVideoObj.play(); 
-        }
-        
-        window.calculateHUDQuota = function(matrix) {
-            let totalBytes = 0; matrix.forEach(n => totalBytes += (n.rawSize || 0));
-            document.getElementById('hud-capacity-text').innerText = `STORAGE: ${(totalBytes / (1024 * 1024)).toFixed(2)} / 2000.00 MB`;
-            document.getElementById('hud-capacity-bar').style.width = `${Math.min((totalBytes / (2000.00 * 1024 * 1024)) * 100, 100)}%`;
-        };
-        
-        function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
-        function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
-    </script>
-</body>
-</html>
+                    document.getElementById('popup-empty-state

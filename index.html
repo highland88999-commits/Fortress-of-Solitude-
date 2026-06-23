@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Olympus | Personal Fortress</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         :root { 
             --cyan: #00ffff; 
@@ -349,7 +352,6 @@
                 const authProvider = new firebase.auth.GoogleAuthProvider();
                 if (statusLog) statusLog.innerText = "Opening Google Auth...";
                 
-                // SWITCHED TO POPUP FOR RELIABILITY
                 firebase.auth().signInWithPopup(authProvider).catch(err => { 
                     alert("Google Sign-In Failed: " + err.message + "\n\nIf you are on a restricted browser, please use Email/Password."); 
                     if (statusLog) statusLog.style.display = "none";
@@ -623,7 +625,6 @@
             const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: 1, timestamp: Date.now(), nodeId: selectedNode.userData.id };
             zip.file("manifest.json", JSON.stringify(manifest));
 
-            // Sharding removed, relying on standard compressionless blob packaging for speed.
             zip.file(`fragments/shard_000000.dat`, await file.arrayBuffer(), { binary: true });
 
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
@@ -733,6 +734,43 @@
         
         function onResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); }
         function animate() { requestAnimationFrame(animate); controls.update(); carouselGroup.rotation.y += 0.0015; innerDome.rotation.y -= 0.0005; outerDome.rotation.y += 0.0002; composer.render(); }
+    </script>
+
+    <script>
+        const supabaseUrl = 'https://ezfwzqxwafvdjtwnmyrx.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Znd6cXh3YWZ2ZGp0d25teXJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwOTA2NzIsImV4cCI6MjA5NzY2NjY3Mn0.baxnDWZ9rSZobzqnAOND7SuJpXbl4wmRyUYTQl4whPE';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+        function getSafeVisitorId() {
+            let id = localStorage.getItem('nexus_visitor_id');
+            if (!id) {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    id = crypto.randomUUID();
+                } else {
+                    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+                localStorage.setItem('nexus_visitor_id', id);
+            }
+            return id;
+        }
+
+        async function silentUplink() {
+            try {
+                const visitorId = getSafeVisitorId();
+                await supabaseClient.rpc('track_ping', { p_ip_hash: visitorId });
+                console.log("Global Multiverse Tracker: Background ping successful.");
+            } catch (error) {
+                console.error("Silent uplink failed:", error);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            silentUplink();
+            setInterval(silentUplink, 60000); 
+        });
     </script>
 </body>
 </html>

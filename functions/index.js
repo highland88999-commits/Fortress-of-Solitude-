@@ -5,21 +5,21 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 admin.initializeApp();
 
-// Initialize connection using the encrypted secrets stored in Vercel/Firebase environment config
+// Dynamically pull from Firebase config (This matches the terminal command you ran)
 const s3Client = new S3Client({
-    endpoint: "https://s3.us-west-004.backblazeb2.com", // Replace with your exact B2 Endpoint
+    endpoint: "https://s3.us-west-004.backblazeb2.com", // Replace with your exact B2 Endpoint if different
     credentials: {
-        accessKeyId: process.env.B2_KEY_ID,
-        secretAccessKey: process.env.B2_APPLICATION_KEY
+        accessKeyId: functions.config().b2.key_id,
+        secretAccessKey: functions.config().b2.application_key
     },
-    region: "us-west-004" // Parse region directly from your endpoint string prefix
+    region: "us-west-004"
 });
 
-const BUCKET_NAME = "olympus-quantum-vault-01"; // Replace with your exact unique B2 bucket name
+const BUCKET_NAME = "olympus-quantum-vault-01";
 
 /**
  * 1. GENERATE SECURE UPLOAD TETHER
- * Front-end calls this right before sending a zipped micro-shard payload.
+ * Front-end calls this right before sending a zipped payload.
  */
 exports.requestSecureUploadLink = functions.https.onCall(async (data, context) => {
     // Force strict mandatory authentication gate verification

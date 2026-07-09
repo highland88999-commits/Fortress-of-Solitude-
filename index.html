@@ -267,6 +267,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="importmap">
@@ -312,7 +314,6 @@
         let activeDownloadUrl = null;
         let activeManifest = null;
 
-        // Floor Media Tracking
         let activeFloorMediaUrl = null;
         let activeFloorMediaType = null;
         let activeFloorFileName = null;
@@ -349,7 +350,6 @@
                 const authProvider = new firebase.auth.GoogleAuthProvider();
                 if (statusLog) statusLog.innerText = "Opening Google Auth...";
                 
-                // SWITCHED TO POPUP FOR RELIABILITY
                 firebase.auth().signInWithPopup(authProvider).catch(err => { 
                     alert("Google Sign-In Failed: " + err.message + "\n\nIf you are on a restricted browser, please use Email/Password."); 
                     if (statusLog) statusLog.style.display = "none";
@@ -375,6 +375,7 @@
             }
         };
 
+        // Persistent Authentication State Hook
         firebase.auth().onAuthStateChanged(async (user) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             const uiLayer = document.getElementById('ui-layer');
@@ -386,6 +387,8 @@
                     uiLayer.style.display = 'flex'; 
                     gsap.to(uiLayer, {opacity: 1, duration: 0.5});
                 }});
+                
+                // Triggers database pull for saved crystals immediately on login
                 await initializeUserFortressInstance(user.uid);
                 initScene();
             } else {
@@ -400,6 +403,7 @@
             try {
                 const doc = await docRef.get();
                 if (doc.exists) {
+                    // Restores previous session data safely
                     const data = doc.data();
                     window.rebuildCrystalsFromSchema(data.crystalMatrix || []);
                     window.calculateHUDQuota(data.crystalMatrix || []);
@@ -408,7 +412,8 @@
                     for (let i = 0; i < 12; i++) {
                         starterMatrix.push({ id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: `Crystal ${i+1}`, color: "#00ffff", height: 4 + Math.random() * 1.5, fileStorageKey: "", rawSize: 0 });
                     }
-                    await docRef.set({ crystalMatrix: starterMatrix });
+                    // Generates base schema using merge to prevent destructive overwriting
+                    await docRef.set({ crystalMatrix: starterMatrix }, { merge: true });
                     window.rebuildCrystalsFromSchema(starterMatrix);
                     window.calculateHUDQuota(starterMatrix);
                 }
@@ -531,6 +536,10 @@
                 const node = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, nodeData.height, 6), new THREE.MeshStandardMaterial({ map: new THREE.TextureLoader().load('assets/1776228269143.png'), emissive: new THREE.Color(nodeData.color), emissiveIntensity: 0.5, metalness: 0.9, roughness: 0.1 }));
                 node.position.set(Math.cos(angle) * 11, nodeData.height / 2, Math.sin(angle) * 11);
                 node.userData = { ...nodeData, index: i };
+                
+                // Explicitly sync visual material to saved DB color for persistence 
+                node.material.color.set(nodeData.color);
+
                 carouselGroup.add(node); crystals.push(node);
             });
         };
@@ -544,7 +553,7 @@
             const hits = raycaster.intersectObjects(crystals);
             const tt = document.getElementById('tooltip');
             
-            if (tt.innerText === "UPLOADING..." || tt.innerText === "DECRYPTING..." || tt.innerText === "UPLOADING TO BUCKET..." || tt.innerText === "SYNCING METADATA...") return;
+            if (tt.innerText === "PREPARING UPLOAD..." || tt.innerText === "REQUESTING SECURE TETHER..." || tt.innerText === "UPLOADING TO VAULT..." || tt.innerText === "SYNCING CRYSTAL MATRIX..." || tt.innerText === "DECRYPTING FROM VAULT...") return;
 
             if (hits.length > 0 && !selectedNode) {
                 tt.style.display = 'block'; tt.style.left = `${e.clientX + 20}px`; tt.style.top = `${e.clientY + 20}px`; tt.style.transform = 'none';
@@ -616,74 +625,111 @@
             }
         }
 
+        // FULLY REWRITTEN UPLOAD LOGIC
         async function stagePayloadCompression(file) {
-            window.reportStatus("UPLOADING...");
-            
-            const zip = new JSZip();
-            const manifest = { originName: file.name, mimeType: file.type, rawSizeBytes: file.size, totalFragments: 1, timestamp: Date.now(), nodeId: selectedNode.userData.id };
-            zip.file("manifest.json", JSON.stringify(manifest));
+            window.reportStatus("PREPARING UPLOAD...");
 
-            // Sharding removed, relying on standard compressionless blob packaging for speed.
-            zip.file(`fragments/shard_000000.dat`, await file.arrayBuffer(), { binary: true });
+            const zip = new JSZip();
+            const manifest = { 
+                originName: file.name, 
+                mimeType: file.type, 
+                rawSizeBytes: file.size, 
+                timestamp: Date.now(), 
+                nodeId: selectedNode.userData.id 
+            };
+            
+            zip.file("manifest.json", JSON.stringify(manifest));
+            zip.file("payload.dat", await file.arrayBuffer(), { binary: true });
 
             gsap.to(carouselGroup.rotation, { y: "+=5", duration: 1.5, ease: "power3.out" });
             const compressedZipBlob = await zip.generateAsync({ type: "blob" });
             
             document.getElementById('popup').style.display = 'none';
-            window.reportStatus("UPLOADING TO BUCKET...");
+            window.reportStatus("REQUESTING SECURE TETHER...");
 
             try {
-                const storagePath = `vaults/${currentUserInstance.uid}/${manifest.nodeId}_core.zip`;
-                await storage.ref(storagePath).put(compressedZipBlob);
+                // Execute secure token fetch
+                const requestUploadLink = firebase.functions().httpsCallable('requestSecureUploadLink');
+                const linkResponse = await requestUploadLink({ nodeId: selectedNode.userData.id });
                 
-                window.reportStatus("SYNCING METADATA...");
-                
-                db.collection("fortresses").doc(currentUserInstance.uid).get().then((doc) => {
-                    let matrix = doc.data().crystalMatrix;
-                    let targetIdx = matrix.findIndex(c => c.id === selectedNode.userData.id);
-                    
-                    if (targetIdx !== -1) {
-                        matrix[targetIdx].fileStorageKey = storagePath;
-                        matrix[targetIdx].name = manifest.originName;
-                        matrix[targetIdx].rawSize = manifest.rawSizeBytes;
-                        db.collection("fortresses").doc(currentUserInstance.uid).update({ crystalMatrix: matrix }).then(() => {
-                            window.rebuildCrystalsFromSchema(matrix); window.calculateHUDQuota(matrix); 
-                            window.hideStatus();
-                            window.saveAndClose();
-                        });
-                    } else {
-                        throw new Error("Crystal sync misalignment.");
-                    }
-                }).catch(err => {
-                    console.error("Sync Error:", err);
-                    window.reportStatus("SYNC ERROR. TRY AGAIN.");
-                    setTimeout(window.hideStatus, 3000);
+                const b2UploadUrl = linkResponse.data.uploadUrl;
+                const savedStorageKey = linkResponse.data.fileStorageKey;
+
+                window.reportStatus("UPLOADING TO VAULT...");
+
+                // Execute strict Cloud PUT request
+                const uploadResult = await fetch(b2UploadUrl, {
+                    method: 'PUT',
+                    body: compressedZipBlob,
+                    headers: { 'Content-Type': 'application/zip' }
                 });
+
+                if (!uploadResult.ok) throw new Error("Storage server rejected the payload.");
+
+                window.reportStatus("SYNCING CRYSTAL MATRIX...");
+                
+                const docRef = db.collection("fortresses").doc(currentUserInstance.uid);
+                const docSnap = await docRef.get();
+                
+                let matrix = docSnap.exists ? docSnap.data().crystalMatrix : crystals.map(c => c.userData);
+                let targetIdx = matrix.findIndex(c => c.id === selectedNode.userData.id);
+                
+                if (targetIdx !== -1) {
+                    matrix[targetIdx].fileStorageKey = savedStorageKey; 
+                    matrix[targetIdx].name = manifest.originName;
+                    matrix[targetIdx].rawSize = manifest.rawSizeBytes;
+                    
+                    // Secure DB write using set merge to preserve persistent data
+                    await docRef.set({ crystalMatrix: matrix }, { merge: true });
+                    
+                    window.rebuildCrystalsFromSchema(matrix); 
+                    window.calculateHUDQuota(matrix); 
+                    window.hideStatus();
+                    window.saveAndClose();
+                }
             } catch (err) { 
-                console.error("Upload error:", err); 
-                window.reportStatus("UPLOAD FAILED");
+                console.error("Upload process failed:", err); 
+                window.reportStatus("UPLOAD ERROR. TRY AGAIN.");
                 setTimeout(window.hideStatus, 3000);
             }
         }
 
+        // FULLY REWRITTEN DOWNLOAD LOGIC
         async function extractCrystalData() {
             const storageKey = selectedNode.userData.fileStorageKey;
-            window.reportStatus("DECRYPTING...");
+            window.reportStatus("REQUESTING SECURE TETHER...");
+
             try {
-                const downloadUrl = await storage.ref(storageKey).getDownloadURL();
+                // Execute Secure Access Token Fetch
+                const requestDownloadLink = firebase.functions().httpsCallable('requestSecureDownloadLink');
+                const linkResponse = await requestDownloadLink({ fileStorageKey: storageKey });
+                const downloadUrl = linkResponse.data.downloadUrl;
+
+                window.reportStatus("DECRYPTING FROM VAULT...");
+
+                // Intercept payload from B2 cloud
                 const cloudStream = await fetch(downloadUrl);
+                if (!cloudStream.ok) throw new Error("Vault access denied or link expired.");
+                
+                // Break encryption mapping
                 const unzipped = await JSZip.loadAsync(await cloudStream.blob());
                 activeManifest = JSON.parse(await unzipped.file("manifest.json").async("string"));
                 
-                let compiledBuffers = [];
-                for (let i = 0; i < activeManifest.totalFragments; i++) {
-                    compiledBuffers.push(await unzipped.file(`fragments/shard_${i.toString().padStart(6, '0')}.dat`).async("arraybuffer"));
-                }
-                const reconstructedBlob = new Blob(compiledBuffers, { type: activeManifest.mimeType });
+                // Process compiled byte structure
+                const payloadBlob = await unzipped.file("payload.dat").async("blob");
+                
+                // Cast true Blob signature
+                const reconstructedBlob = new Blob([payloadBlob], { type: activeManifest.mimeType });
                 activeDownloadUrl = URL.createObjectURL(reconstructedBlob);
+                
                 window.hideStatus();
                 return true;
-            } catch (err) { console.error("Extraction failed:", err); window.reportStatus("ERROR EXTRACTING"); setTimeout(window.hideStatus, 2000); return false; }
+            } catch (err) {
+                console.error("Extraction failed:", err);
+                window.reportStatus("ERROR EXTRACTING");
+                setTimeout(window.hideStatus, 2000);
+                return false;
+            }
         }
 
         window.viewActiveCrystal = async function() {

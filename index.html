@@ -652,13 +652,13 @@
                 const requestUploadLink = firebase.functions().httpsCallable('requestSecureUploadLink');
                 const linkResponse = await requestUploadLink({ nodeId: selectedNode.userData.id });
                 
-                const b2UploadUrl = linkResponse.data.uploadUrl;
+                const uploadUrl = linkResponse.data.uploadUrl;
                 const savedStorageKey = linkResponse.data.fileStorageKey;
 
                 window.reportStatus("UPLOADING TO VAULT...");
 
                 // Execute strict Cloud PUT request
-                const uploadResult = await fetch(b2UploadUrl, {
+                const uploadResult = await fetch(uploadUrl, {
                     method: 'PUT',
                     body: compressedZipBlob,
                     headers: { 'Content-Type': 'application/zip' }
@@ -707,7 +707,7 @@
 
                 window.reportStatus("DECRYPTING FROM VAULT...");
 
-                // Intercept payload from B2 cloud
+                // Intercept payload from secure cloud
                 const cloudStream = await fetch(downloadUrl);
                 if (!cloudStream.ok) throw new Error("Vault access denied or link expired.");
                 

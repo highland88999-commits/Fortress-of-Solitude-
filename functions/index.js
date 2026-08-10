@@ -1,22 +1,11 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
+// Initialize Firebase Admin (Storage bucket is automatically inferred from your Firebase project)
 admin.initializeApp();
 
-// Dynamically pull from Firebase config (This matches the terminal command you ran)
-const s3Client = new S3Client({
-    endpoint: "https://s3.us-west-004.backblazeb2.com", // Replace with your exact B2 Endpoint if different
-    credentials: {
-        accessKeyId: functions.config().b2.key_id,
-        secretAccessKey: functions.config().b2.application_key
-    },
-    region: "us-west-004",
-    forcePathStyle: true // REQUIRED: Forces B2-compatible pathing to prevent signature mismatch
-});
-
-const BUCKET_NAME = "olympus-quantum-vault-01";
+// Use native Firebase Cloud Storage instead of Backblaze
+const bucket = admin.storage().bucket();
 
 /**
  * 1. GENERATE SECURE UPLOAD TETHER
@@ -39,14 +28,15 @@ exports.requestSecureUploadLink = functions.https.onCall(async (data, context) =
     const fileStorageKey = `vaults/${uid}/${nodeId}_core.zip`;
 
     try {
-        const command = new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: fileStorageKey,
-            ContentType: "application/zip"
-        });
+        const file = bucket.file(fileStorageKey);
 
-        // Generate a temporary single-use signature that expires in 15 minutes (900 seconds)
-        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+        // Generate a temporary single-use signature that expires in 15 minutes
+        const [uploadUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 15 * 60 * 1000, // 15 minutes from now
+            contentType: 'application/zip'
+        });
 
         return { success: true, uploadUrl, fileStorageKey };
     } catch (error) {
@@ -77,13 +67,14 @@ exports.requestSecureDownloadLink = functions.https.onCall(async (data, context)
     }
 
     try {
-        const command = new GetObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: fileStorageKey
-        });
+        const file = bucket.file(fileStorageKey);
 
-        // Generate an authorized link valid for 1 hour (3600 seconds) for internal browser memory extraction
-        const downloadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        // Generate an authorized link valid for 1 hour for internal browser memory extraction
+        const [downloadUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000 // 1 hour from now
+        });
 
         return { success: true, downloadUrl };
     } catch (error) {

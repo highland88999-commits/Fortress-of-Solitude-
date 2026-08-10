@@ -1,0 +1,50 @@
+name: Surgical Strike - Remove Backblaze
+on: 
+  workflow_dispatch:
+    
+jobs:
+  scrub_dependency:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required for me to push the cleanup commit back to you
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+        
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: 🗑️ Purge Backblaze Dependency
+        run: |
+          echo "Scanning for Backblaze..."
+          
+          # Check root package.json
+          if [ -f "package.json" ]; then
+            npm uninstall backblaze-b2 || true
+          fi
+          
+          # Check Firebase functions directory
+          if [ -d "functions" ] && [ -f "functions/package.json" ]; then
+            cd functions
+            npm uninstall backblaze-b2 || true
+            cd ..
+          fi
+          
+      - name: 💾 Commit Changes Back to Repo
+        run: |
+          git config --global user.name "Neon Shell Automaton (Gemini)"
+          git config --global user.email "gemini@neonshell.cloud"
+          
+          git add .
+          
+          # Only commit if there are actually changes to package.json
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore: surgically removed backblaze-b2 dependency"
+            git push
+            echo "SUCCESS: Backblaze scrubbed from package maps."
+          else
+            echo "INFO: Backblaze was already removed from dependencies."
+          fi

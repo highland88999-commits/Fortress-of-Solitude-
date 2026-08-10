@@ -12,7 +12,8 @@ const s3Client = new S3Client({
         accessKeyId: functions.config().b2.key_id,
         secretAccessKey: functions.config().b2.application_key
     },
-    region: "us-west-004"
+    region: "us-west-004",
+    forcePathStyle: true // REQUIRED: Forces B2-compatible pathing to prevent signature mismatch
 });
 
 const BUCKET_NAME = "olympus-quantum-vault-01";

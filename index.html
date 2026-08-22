@@ -12,22 +12,20 @@
         const SUPABASE_URL = 'https://amulgdbdvxpikpmldyoq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWxnZGJkdnhwaWtwbWxkeW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MDU3MzgsImV4cCI6MjEwMTk4MTczOH0.0eZ3SfWhUEzSLpDDKEE_3vp5siXF00akRp5jX1dM-dA';
         
-        // Auto-detect repository name or fallback to domain
+        // Expose Supabase client globally for the module
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         const REPO_NAME = window.OMEGA_REPO_NAME || window.location.hostname || 'Unknown-Node';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         let clientIP = 'Detecting...';
 
-        // 1. Fetch Client IP
         fetch('https://api.ipify.org?format=json')
           .then(res => res.json())
           .then(data => { clientIP = data.ip; })
           .catch(() => { clientIP = 'IP_UNKNOWN'; });
 
-        // 2. Core Telemetry Logging Function
         window.logBrainAction = async function(actionType, details = {}) {
           try {
-            await supabase.from('central_telemetry').insert([{
+            await window.supabaseClient.from('central_telemetry').insert([{
               repository_name: REPO_NAME,
               action_type: actionType,
               details: {
@@ -43,23 +41,20 @@
           }
         };
 
-        // 3. Register Node into Target Vector Dropdown
         async function registerNode() {
           try {
-            await supabase.from('connected_repos').upsert(
+            await window.supabaseClient.from('connected_repos').upsert(
               { repo_name: REPO_NAME, status: 'active' },
               { onConflict: 'repo_name' }
             );
           } catch (e) {}
         }
 
-        // 4. Auto-Log Page Load
         window.addEventListener('load', () => {
           registerNode();
           window.logBrainAction('page_load', { title: document.title });
         });
 
-        // 5. Auto-Log User Interactions & Clicks
         document.addEventListener('click', (e) => {
           const target = e.target.closest('button, a, input[type="submit"], select');
           if (target) {
@@ -334,8 +329,6 @@
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
     
@@ -360,7 +353,6 @@
 
         const firebaseConfig = {
             apiKey: "AIzaSyBpGY2CfT3jLRiu7HDfwpwaNUkaMC-dRi4",
-            authDomain: "fortress-of-solitude-aed9e.firebaseapp.com",
             projectId: "fortress-of-solitude-aed9e",
             storageBucket: "fortress-of-solitude-aed9e.firebasestorage.app",
             messagingSenderId: "741554663154",
@@ -369,8 +361,8 @@
         };
         
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
         const storage = firebase.storage();
+        const supabase = window.supabaseClient; // Pull from global scope
 
         // Prevent UI click-through
         ['auth-email', 'auth-password', 'node-name', 'search-input', 'upgrade-viewer', 'holoframe-viewer'].forEach(id => {
@@ -412,54 +404,57 @@
             } else { alert("Native sharing is not supported on this browser."); }
         };
 
-        window.executeSecureAuth = function(routeType) {
+        window.executeSecureAuth = async function(routeType) {
             const statusLog = document.getElementById('auth-status-log');
             if (statusLog) statusLog.style.display = "block";
 
-            if (routeType === 'google') {
-                const authProvider = new firebase.auth.GoogleAuthProvider();
-                if (statusLog) statusLog.innerText = "Opening Google Auth...";
-                
-                firebase.auth().signInWithPopup(authProvider).catch(err => { 
-                    alert("Google Sign-In Failed: " + err.message + "\n\nIf you are on a restricted browser, please use Email/Password."); 
-                    if (statusLog) statusLog.style.display = "none";
-                });
-            } else {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                if (!email || !password) return alert("Please enter both an email and password.");
+            try {
+                if (routeType === 'google') {
+                    if (statusLog) statusLog.innerText = "Redirecting to Google...";
+                    const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: { redirectTo: window.location.href }
+                    });
+                    if (error) throw error;
+                } else {
+                    const email = document.getElementById('auth-email').value;
+                    const password = document.getElementById('auth-password').value;
+                    if (!email || !password) return alert("Please enter both an email and password.");
 
-                if (routeType === 'email-login') {
-                    if (statusLog) statusLog.innerText = "Logging in...";
-                    firebase.auth().signInWithEmailAndPassword(email, password).catch(err => {
-                        alert("Access Denied: " + err.message);
-                        statusLog.style.display = "none";
-                    });
-                } else if (routeType === 'email-register') {
-                    if (statusLog) statusLog.innerText = "Creating account...";
-                    firebase.auth().createUserWithEmailAndPassword(email, password).catch(err => {
-                        alert("Registration Error: " + err.message);
-                        statusLog.style.display = "none";
-                    });
+                    if (routeType === 'email-login') {
+                        if (statusLog) statusLog.innerText = "Logging in...";
+                        const { error } = await supabase.auth.signInWithPassword({ email, password });
+                        if (error) throw error;
+                    } else if (routeType === 'email-register') {
+                        if (statusLog) statusLog.innerText = "Creating account...";
+                        const { error } = await supabase.auth.signUp({ email, password });
+                        if (error) throw error;
+                        alert("Check your email for confirmation instructions if required.");
+                    }
                 }
+            } catch (err) {
+                alert("Authentication Error: " + err.message);
+                if (statusLog) statusLog.style.display = "none";
             }
         };
 
-        // Persistent Authentication State Hook
-        firebase.auth().onAuthStateChanged(async (user) => {
+        // Persistent Supabase Auth State Hook
+        supabase.auth.onAuthStateChange(async (event, session) => {
             const shieldOverlay = document.getElementById('auth-gateway');
             const uiLayer = document.getElementById('ui-layer');
+            const user = session?.user || null;
+
             if (user) {
                 currentUserInstance = user;
-                activeUserVaultSegment = `vaults/${user.uid}`;
+                activeUserVaultSegment = `vaults/${user.id}`;
+                
                 gsap.to(shieldOverlay, { opacity: 0, duration: 0.5, onComplete: () => { 
                     shieldOverlay.style.display = 'none'; 
                     uiLayer.style.display = 'flex'; 
-                    gsap.to(uiLayer, {opacity: 1, duration: 0.5});
+                    gsap.to(uiLayer, { opacity: 1, duration: 0.5 });
                 }});
                 
-                // Triggers database pull for saved crystals immediately on login
-                await initializeUserFortressInstance(user.uid);
+                await initializeUserFortressInstance(user.id);
                 initScene();
             } else {
                 currentUserInstance = null;
@@ -469,25 +464,43 @@
         });
 
         async function initializeUserFortressInstance(uid) {
-            const docRef = db.collection("fortresses").doc(uid);
             try {
-                const doc = await docRef.get();
-                if (doc.exists) {
-                    // Restores previous session data safely
-                    const data = doc.data();
-                    window.rebuildCrystalsFromSchema(data.crystalMatrix || []);
-                    window.calculateHUDQuota(data.crystalMatrix || []);
+                const { data, error } = await supabase
+                    .from('fortresses')
+                    .select('crystal_matrix')
+                    .eq('id', uid)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (data && data.crystal_matrix && data.crystal_matrix.length > 0) {
+                    window.rebuildCrystalsFromSchema(data.crystal_matrix);
+                    window.calculateHUDQuota(data.crystal_matrix);
                 } else {
                     const starterMatrix = [];
                     for (let i = 0; i < 12; i++) {
-                        starterMatrix.push({ id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`, name: `Crystal ${i+1}`, color: "#00ffff", height: 4 + Math.random() * 1.5, fileStorageKey: "", rawSize: 0 });
+                        starterMatrix.push({
+                            id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                            name: `Crystal ${i+1}`,
+                            color: "#00ffff",
+                            height: 4 + Math.random() * 1.5,
+                            fileStorageKey: "",
+                            rawSize: 0
+                        });
                     }
-                    // Generates base schema using merge to prevent destructive overwriting
-                    await docRef.set({ crystalMatrix: starterMatrix }, { merge: true });
+                    
+                    await supabase.from('fortresses').upsert({
+                        id: uid,
+                        crystal_matrix: starterMatrix,
+                        updated_at: new Date().toISOString()
+                    });
+
                     window.rebuildCrystalsFromSchema(starterMatrix);
                     window.calculateHUDQuota(starterMatrix);
                 }
-            } catch (err) { console.error("Database sync failed:", err); }
+            } catch (err) {
+                console.error("Supabase Fortress sync failed:", err);
+            }
         }
 
         let scene, camera, renderer, composer, controls, raycaster, mouse;
@@ -607,7 +620,6 @@
                 node.position.set(Math.cos(angle) * 11, nodeData.height / 2, Math.sin(angle) * 11);
                 node.userData = { ...nodeData, index: i };
                 
-                // Explicitly sync visual material to saved DB color for persistence 
                 node.material.color.set(nodeData.color);
 
                 carouselGroup.add(node); crystals.push(node);
@@ -672,9 +684,13 @@
                 gsap.to(selectedNode.position, { y: selectedNode.geometry.parameters.height / 2, duration: 0.4 });
                 
                 if (currentUserInstance) {
-                    db.collection("fortresses").doc(currentUserInstance.uid).set({ 
-                        crystalMatrix: crystals.map(c => c.userData) 
-                    }, { merge: true }).catch(console.error);
+                    supabase.from('fortresses').upsert({
+                        id: currentUserInstance.id,
+                        crystal_matrix: crystals.map(c => c.userData),
+                        updated_at: new Date().toISOString()
+                    }).then(({ error }) => {
+                        if (error) console.error("Failed to save crystal modifications:", error);
+                    });
                 }
             }
             document.getElementById('popup').style.display = 'none'; selectedNode = null;
@@ -689,13 +705,16 @@
             carouselGroup.add(node); crystals.push(node);
             
             if (currentUserInstance) {
-                db.collection("fortresses").doc(currentUserInstance.uid).set({ 
-                    crystalMatrix: crystals.map(c => c.userData) 
-                }, { merge: true }).catch(console.error);
+                supabase.from('fortresses').upsert({
+                    id: currentUserInstance.id,
+                    crystal_matrix: crystals.map(c => c.userData),
+                    updated_at: new Date().toISOString()
+                }).then(({ error }) => {
+                    if (error) console.error("Failed to persist new crystal node:", error);
+                });
             }
         }
 
-        // FULLY REWRITTEN UPLOAD LOGIC
         async function stagePayloadCompression(file) {
             window.reportStatus("PREPARING UPLOAD...");
 
@@ -718,7 +737,7 @@
             window.reportStatus("REQUESTING SECURE TETHER...");
 
             try {
-                // Execute secure token fetch
+                // Keep Firebase function calls active for Phase 2 Edge Function migration
                 const requestUploadLink = firebase.functions().httpsCallable('requestSecureUploadLink');
                 const linkResponse = await requestUploadLink({ nodeId: selectedNode.userData.id });
                 
@@ -727,7 +746,6 @@
 
                 window.reportStatus("UPLOADING TO VAULT...");
 
-                // Execute strict Cloud PUT request
                 const uploadResult = await fetch(uploadUrl, {
                     method: 'PUT',
                     body: compressedZipBlob,
@@ -738,10 +756,10 @@
 
                 window.reportStatus("SYNCING CRYSTAL MATRIX...");
                 
-                const docRef = db.collection("fortresses").doc(currentUserInstance.uid);
-                const docSnap = await docRef.get();
+                // Fetch latest state from Supabase to merge
+                const { data, error } = await supabase.from('fortresses').select('crystal_matrix').eq('id', currentUserInstance.id).maybeSingle();
                 
-                let matrix = docSnap.exists ? docSnap.data().crystalMatrix : crystals.map(c => c.userData);
+                let matrix = data && data.crystal_matrix ? data.crystal_matrix : crystals.map(c => c.userData);
                 let targetIdx = matrix.findIndex(c => c.id === selectedNode.userData.id);
                 
                 if (targetIdx !== -1) {
@@ -749,8 +767,12 @@
                     matrix[targetIdx].name = manifest.originName;
                     matrix[targetIdx].rawSize = manifest.rawSizeBytes;
                     
-                    // Secure DB write using set merge to preserve persistent data
-                    await docRef.set({ crystalMatrix: matrix }, { merge: true });
+                    // Upsert updated matrix back to Supabase
+                    await supabase.from('fortresses').upsert({
+                        id: currentUserInstance.id,
+                        crystal_matrix: matrix,
+                        updated_at: new Date().toISOString()
+                    });
                     
                     window.rebuildCrystalsFromSchema(matrix); 
                     window.calculateHUDQuota(matrix); 
@@ -764,31 +786,25 @@
             }
         }
 
-        // FULLY REWRITTEN DOWNLOAD LOGIC
         async function extractCrystalData() {
             const storageKey = selectedNode.userData.fileStorageKey;
             window.reportStatus("REQUESTING SECURE TETHER...");
 
             try {
-                // Execute Secure Access Token Fetch
                 const requestDownloadLink = firebase.functions().httpsCallable('requestSecureDownloadLink');
                 const linkResponse = await requestDownloadLink({ fileStorageKey: storageKey });
                 const downloadUrl = linkResponse.data.downloadUrl;
 
                 window.reportStatus("DECRYPTING FROM VAULT...");
 
-                // Intercept payload from secure cloud
                 const cloudStream = await fetch(downloadUrl);
                 if (!cloudStream.ok) throw new Error("Vault access denied or link expired.");
                 
-                // Break encryption mapping
                 const unzipped = await JSZip.loadAsync(await cloudStream.blob());
                 activeManifest = JSON.parse(await unzipped.file("manifest.json").async("string"));
                 
-                // Process compiled byte structure
                 const payloadBlob = await unzipped.file("payload.dat").async("blob");
                 
-                // Cast true Blob signature
                 const reconstructedBlob = new Blob([payloadBlob], { type: activeManifest.mimeType });
                 activeDownloadUrl = URL.createObjectURL(reconstructedBlob);
                 

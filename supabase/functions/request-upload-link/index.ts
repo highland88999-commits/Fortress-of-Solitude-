@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
     }
 
-    const { filename } = await req.json()
-    if (!filename || !filename.endsWith('.zip')) {
-        return new Response(JSON.stringify({ error: 'Valid .zip filename required' }), { status: 400, headers: corsHeaders })
+    const { nodeId } = await req.json()
+    if (!nodeId) {
+        return new Response(JSON.stringify({ error: 'nodeId missing from execution payload' }), { status: 400, headers: corsHeaders })
     }
 
     // Initialize Google Cloud Storage with Service Account
@@ -45,22 +45,23 @@ Deno.serve(async (req) => {
     const bucketName = Deno.env.get('FIREBASE_STORAGE_BUCKET') ?? ''
     const bucket = storage.bucket(bucketName)
     
-    // Structure path to ensure tenant isolation by user ID
-    const file = bucket.file(`uploads/${user.id}/${filename}`)
+    // Structure path to ensure tenant isolation by user ID matches DB expectations
+    const fileStorageKey = `vaults/${user.id}/${nodeId}_core.zip`
+    const file = bucket.file(fileStorageKey)
 
     // Generate a V4 signed URL for write access 
-    const [url] = await file.getSignedUrl({
+    const [uploadUrl] = await file.getSignedUrl({
       version: 'v4',
       action: 'write',
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes
       contentType: 'application/zip',
     })
 
-    return new Response(JSON.stringify({ url, path: file.name }), {
+    return new Response(JSON.stringify({ uploadUrl, fileStorageKey }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
-  } catch (error) {
+  } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

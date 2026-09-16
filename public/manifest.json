@@ -1,1 +1,15 @@
-
+{
+  "short_name": "Fortress",
+  "name": "Fortress of Solitude Application",
+  "icons": [
+    {
+      "src": "./IMG_2868.jpeg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0a0a0a",
+  "background_color": "#121212"
+}

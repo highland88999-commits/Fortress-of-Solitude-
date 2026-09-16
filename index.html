@@ -12,7 +12,6 @@
         const SUPABASE_URL = 'https://amulgdbdvxpikpmldyoq.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdWxnZGJkdnhwaWtwbWxkeW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MDU3MzgsImV4cCI6MjEwMTk4MTczOH0.0eZ3SfWhUEzSLpDDKEE_3vp5siXF00akRp5jX1dM-dA';
         
-        // Expose Supabase client globally for the module
         window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         const REPO_NAME = window.OMEGA_REPO_NAME || window.location.hostname || 'Unknown-Node';
@@ -328,10 +327,7 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
-    
+    <!-- JSZip included for compression before upload -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <script type="importmap">
@@ -351,17 +347,6 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBpGY2CfT3jLRiu7HDfwpwaNUkaMC-dRi4",
-            projectId: "fortress-of-solitude-aed9e",
-            storageBucket: "fortress-of-solitude-aed9e.firebasestorage.app",
-            messagingSenderId: "741554663154",
-            appId: "1:741554663154:web:54c8eebc07b3c4b3fe2a6b",
-            measurementId: "G-BD90W5BPLK"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const storage = firebase.storage();
         const supabase = window.supabaseClient; // Pull from global scope
 
         // Prevent UI click-through
@@ -737,12 +722,15 @@
             window.reportStatus("REQUESTING SECURE TETHER...");
 
             try {
-                // Keep Firebase function calls active for Phase 2 Edge Function migration
-                const requestUploadLink = firebase.functions().httpsCallable('requestSecureUploadLink');
-                const linkResponse = await requestUploadLink({ nodeId: selectedNode.userData.id });
+                // Calling Supabase Edge Functions instead of Firebase Callable
+                const { data: linkResponse, error: linkError } = await supabase.functions.invoke('request-upload-link', {
+                    body: { nodeId: selectedNode.userData.id }
+                });
                 
-                const uploadUrl = linkResponse.data.uploadUrl;
-                const savedStorageKey = linkResponse.data.fileStorageKey;
+                if (linkError) throw linkError;
+                
+                const uploadUrl = linkResponse.uploadUrl;
+                const savedStorageKey = linkResponse.fileStorageKey;
 
                 window.reportStatus("UPLOADING TO VAULT...");
 
@@ -756,7 +744,6 @@
 
                 window.reportStatus("SYNCING CRYSTAL MATRIX...");
                 
-                // Fetch latest state from Supabase to merge
                 const { data, error } = await supabase.from('fortresses').select('crystal_matrix').eq('id', currentUserInstance.id).maybeSingle();
                 
                 let matrix = data && data.crystal_matrix ? data.crystal_matrix : crystals.map(c => c.userData);
@@ -767,7 +754,6 @@
                     matrix[targetIdx].name = manifest.originName;
                     matrix[targetIdx].rawSize = manifest.rawSizeBytes;
                     
-                    // Upsert updated matrix back to Supabase
                     await supabase.from('fortresses').upsert({
                         id: currentUserInstance.id,
                         crystal_matrix: matrix,
@@ -791,9 +777,14 @@
             window.reportStatus("REQUESTING SECURE TETHER...");
 
             try {
-                const requestDownloadLink = firebase.functions().httpsCallable('requestSecureDownloadLink');
-                const linkResponse = await requestDownloadLink({ fileStorageKey: storageKey });
-                const downloadUrl = linkResponse.data.downloadUrl;
+                // Calling native Supabase Edge Function to get the file
+                const { data: linkResponse, error: linkError } = await supabase.functions.invoke('request-download-link', {
+                    body: { fileStorageKey: storageKey }
+                });
+                
+                if (linkError) throw linkError;
+                
+                const downloadUrl = linkResponse.downloadUrl;
 
                 window.reportStatus("DECRYPTING FROM VAULT...");
 

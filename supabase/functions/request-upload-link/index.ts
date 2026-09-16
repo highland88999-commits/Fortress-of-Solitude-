@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS for preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,25 +17,27 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Missing Auth header' }), { status: 401, headers: corsHeaders })
     }
 
-    // Initialize Supabase Client with the user's auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     )
 
-    // Verify JWT and get the authenticated user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
     }
 
-    const { nodeId } = await req.json()
-    if (!nodeId) {
-        return new Response(JSON.stringify({ error: 'nodeId missing from execution payload' }), { status: 400, headers: corsHeaders })
+    const { fileStorageKey } = await req.json()
+    if (!fileStorageKey) {
+        return new Response(JSON.stringify({ error: 'fileStorageKey required' }), { status: 400, headers: corsHeaders })
     }
 
-    // Initialize Google Cloud Storage with Service Account
+    // HARD SECURITY WALL: Enforce that users can only fetch links pointing to their own subfolders
+    if (!fileStorageKey.startsWith(`vaults/${user.id}/`)) {
+        return new Response(JSON.stringify({ error: 'Permission denied. Security signature mismatch.' }), { status: 403, headers: corsHeaders })
+    }
+
     const storage = new Storage({
       projectId: Deno.env.get('GCP_PROJECT_ID'),
       credentials: JSON.parse(Deno.env.get('GCP_SERVICE_ACCOUNT_KEY') ?? '{}'),
@@ -44,20 +45,16 @@ Deno.serve(async (req) => {
 
     const bucketName = Deno.env.get('FIREBASE_STORAGE_BUCKET') ?? ''
     const bucket = storage.bucket(bucketName)
-    
-    // Structure path to ensure tenant isolation by user ID matches DB expectations
-    const fileStorageKey = `vaults/${user.id}/${nodeId}_core.zip`
     const file = bucket.file(fileStorageKey)
 
-    // Generate a V4 signed URL for write access 
-    const [uploadUrl] = await file.getSignedUrl({
+    // Generate an authorized link valid for 1 hour for internal browser memory extraction
+    const [downloadUrl] = await file.getSignedUrl({
       version: 'v4',
-      action: 'write',
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-      contentType: 'application/zip',
+      action: 'read',
+      expires: Date.now() + 60 * 60 * 1000,
     })
 
-    return new Response(JSON.stringify({ uploadUrl, fileStorageKey }), {
+    return new Response(JSON.stringify({ downloadUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
